@@ -119,6 +119,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26642A892CD5976A005AC9E0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				26642A552CD594DB005AC9E0 /* Video_Editor */,
@@ -208,6 +209,9 @@
 			);
 			mainGroup = 26642A4A2CD594DB005AC9E0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				26642A872CD5968B005AC9E0 /* XCRemoteSwiftPackageReference "SnapKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 26642A542CD594DB005AC9E0 /* Products */;
 			projectDirPath = "";
@@ -278,6 +282,10 @@
 			isa = PBXTargetDependency;
 			target = 26642A522CD594DB005AC9E0 /* Video_Editor */;
 			targetProxy = 26642A742CD594DC005AC9E0 /* PBXContainerItemProxy */;
+		};
+		26642A892CD5976A005AC9E0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 26642A882CD5976A005AC9E0 /* SnapKit */;
 		};
 /* End PBXTargetDependency section */
 
@@ -569,6 +577,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		26642A872CD5968B005AC9E0 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SnapKit/SnapKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.7.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		26642A882CD5976A005AC9E0 /* SnapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 26642A872CD5968B005AC9E0 /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = SnapKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 26642A4B2CD594DB005AC9E0 /* Project object */;
 }
