@@ -11,8 +11,10 @@ import SnapKit
 
 struct ArchiveProject {
     let createDate: Date
+    let modifyDate: Date
     let duration: CMTime
     let representImage: UIImage
+    let sizeInMB: Float
 }
 
 class StartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate {
@@ -33,7 +35,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     let headerMaxHeight: CGFloat = 70
     
     let tableViewContentInset: CGFloat = 100
-    let tableViewRowHeight: CGFloat = 30
+    let tableViewRowHeight: CGFloat = 100
     var headerTopInitialPadding: CGFloat { get {tableViewContentInset - headerMaxHeight} }
     
     override func viewDidLoad() {
@@ -67,6 +69,9 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             make.bottom.equalTo(self.view.safeAreaLayoutGuide.snp.bottom)
         }
 
+        prepareTestData()
+        // fixed row height
+        tableView.rowHeight = 100
         tableView.reloadData()
     }
     
@@ -85,7 +90,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         containerView.addSubview(addImageView)
         
         addImageView.snp.makeConstraints { make in
-            make.left.equalToSuperview()
+            make.left.equalToSuperview().inset(10)
             make.centerY.equalToSuperview()
         }
         
@@ -115,19 +120,74 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - table view datasource and delegate
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-
-        if cell.contentView.viewWithTag(1) == nil {
-            let durationLabel = UILabel()
-            durationLabel.tag = 1
-            durationLabel.textColor = .red
-            durationLabel.textAlignment = .right
-            cell.contentView.addSubview(durationLabel)
-            durationLabel.frame = cell.contentView.frame
-            durationLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        if cell.contentView.subviews.count == 0 {
+            let createTimeLabel = UILabel()
+            createTimeLabel.tag = 100
+            createTimeLabel.textColor = .label
+            createTimeLabel.textAlignment = .left
+            cell.contentView.addSubview(createTimeLabel)
+            
+            let modifyTimeLabel = UILabel()
+            modifyTimeLabel.tag = 101
+            modifyTimeLabel.textColor = .gray
+            modifyTimeLabel.textAlignment = .left
+            cell.contentView.addSubview(modifyTimeLabel)
+            
+            let sizeDurationLabel = UILabel()
+            sizeDurationLabel.tag = 102
+            sizeDurationLabel.textColor = .gray
+            sizeDurationLabel.textAlignment = .left
+            cell.contentView.addSubview(sizeDurationLabel)
+            
+            let previewImgView = UIImageView()
+            previewImgView.tag = 103
+            previewImgView.contentMode = .scaleAspectFill
+            previewImgView.clipsToBounds = true
+            previewImgView.layer.cornerRadius = 10
+            cell.contentView.addSubview(previewImgView)
+            
+            // add constraints
+            previewImgView.snp.makeConstraints { make in
+                make.left.equalToSuperview().inset(10)
+                make.width.height.equalTo(80)
+                make.centerY.equalToSuperview()
+            }
+            
+            modifyTimeLabel.snp.makeConstraints { make in
+                make.left.equalTo(previewImgView.snp.right).offset(10)
+                make.centerY.equalToSuperview()
+            }
+            
+            createTimeLabel.snp.makeConstraints { make in
+                make.left.equalTo(previewImgView.snp.right).offset(10)
+                make.bottom.equalTo(modifyTimeLabel.snp.top).offset(-5)
+            }
+            
+            sizeDurationLabel.snp.makeConstraints { make in
+                make.left.equalTo(previewImgView.snp.right).offset(10)
+                make.top.equalTo(modifyTimeLabel.snp.bottom).offset(5)
+            }
         }
         
-        let label : UILabel = cell.contentView.viewWithTag(1) as! UILabel
-        label.text = archiveProjects[indexPath.row].createDate.timeIntervalSinceNow.description
+        let createTimeLabel : UILabel = cell.contentView.viewWithTag(100) as! UILabel
+        let modifyTimeLabel : UILabel = cell.contentView.viewWithTag(101) as! UILabel
+        let sizeDurationLabel : UILabel = cell.contentView.viewWithTag(102) as! UILabel
+        let previewImgView : UIImageView = cell.contentView.viewWithTag(103) as! UIImageView
+        
+        let project = archiveProjects[indexPath.row]
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMdd"
+        createTimeLabel.text = dateFormatter.string(from: project.createDate)
+        
+        dateFormatter.dateFormat = "dd/MM/yyyy HH:mm"
+        modifyTimeLabel.text = dateFormatter.string(from: project.modifyDate)
+        
+        let duration = Int(project.duration.seconds)
+        let second = duration % 60
+        let miniute = duration / 60
+        sizeDurationLabel.text = "\(project.sizeInMB)MB    \(String(format: "%02d:%02d", miniute, second))"
+        previewImgView.image = project.representImage
         
         return cell
     }
@@ -224,7 +284,21 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         }
     }
     
-    
+    // MARK: - prepare test data
+    private func prepareTestData() {
+        var images = [UIImage]()
+        for i in 1...3 {
+            let name = "pic_\(i)"
+            let path = Bundle.main.path(forResource: name, ofType: "jpg")
+            let data = try? Data(contentsOf: URL(fileURLWithPath: path!))
+            images.append(UIImage(data: data!)!)
+        }
+        
+        for image in images {
+            let project = ArchiveProject(createDate: Date(), modifyDate: Date(), duration: CMTime(value: 10, timescale: 1), representImage: image, sizeInMB: 10)
+            archiveProjects.append(project)
+        }
+    }
 }
 
 
