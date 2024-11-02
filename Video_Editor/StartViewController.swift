@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  StartViewController.swift
 //  Video_Editor
 //
 //  Created by Yu Yang on 2024-11-01.
@@ -14,17 +14,14 @@ struct ArchiveProject {
     let duration: CMTime
 }
 
-
 class StartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate {
     
     var tableView: UITableView!
-    
-    
     var headerView: UIButton!
     
-    var heightConstraint: NSLayoutConstraint!
-    var newProjectLabelRightConstraint: NSLayoutConstraint!
-    var headerViewTopConstraint: NSLayoutConstraint!
+    var headerViewHeightConstraint: ConstraintMakerEditable!
+    var newProjectLabelRightConstraint: ConstraintMakerEditable!
+    var headerViewTopConstraint: ConstraintMakerEditable!
     
 //    var addIamgeViewLeftConstraint: NSLayoutConstraint!
     var titleLabel : UILabel!
@@ -41,6 +38,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         // add table view
         self.tableView = UITableView()
         tableView.dataSource = self
@@ -49,33 +47,29 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         self.view.addSubview(tableView)
         
-        tableView.showsVerticalScrollIndicator = false
-        
         headerView = UIButton()
         headerView.backgroundColor = .red
         self.view.addSubview(headerView)
         setupHeaderView()
         
-        headerView.translatesAutoresizingMaskIntoConstraints = false
-        headerView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10).isActive = true
-        headerView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -10).isActive = true
-        headerViewTopConstraint = headerView.topAnchor.constraint(equalTo: self.view.topAnchor, constant: headerTopInitialPadding)
-        headerViewTopConstraint.isActive = true
-        heightConstraint = headerView.heightAnchor.constraint(equalToConstant: headerMaxHeight)
-        heightConstraint.isActive = true
+        headerView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(10)
+            headerViewTopConstraint =  make.top.equalTo(self.view.safeAreaLayoutGuide.snp.top).inset(headerTopInitialPadding)
+            headerViewHeightConstraint = make.height.equalTo(headerMaxHeight)
+        }
+        
+
+        
+        tableView.showsVerticalScrollIndicator = false
         
         tableView.contentInset = UIEdgeInsets(top: tableViewContentInset, left: 0, bottom: 0, right: 0)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.topAnchor.constraint(equalTo: self.view.topAnchor).isActive = true
-        tableView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor).isActive = true
-        tableView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 10).isActive = true
-        tableView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -10).isActive = true
-        
+        tableView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(10)
+            make.top.equalTo(self.view.safeAreaLayoutGuide.snp.top)
+            make.bottom.equalTo(self.view.safeAreaLayoutGuide.snp.bottom)
+        }
+
         tableView.reloadData()
-        
-//        DispatchQueue.main.async {
-//            self.tableView.setContentOffset(CGPointMake(0, -100), animated: false)
-//        }
     }
     
     private func setupHeaderView() {
@@ -83,22 +77,19 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         headerView.addTarget(self, action: #selector(addButtonTapped), for: .touchUpInside)
         
         let containerView = UIView()
-//        containerView.backgroundColor = .orange
+        containerView.backgroundColor = .orange
         containerView.isUserInteractionEnabled = false
-        containerView.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(containerView)
-        
-        // contraint to the center
-        containerView.centerXAnchor.constraint(equalTo: headerView.centerXAnchor).isActive = true
-        containerView.centerYAnchor.constraint(equalTo: headerView.centerYAnchor).isActive = true
-        
+
         // add New Project
         let addImageView = UIImageView(image: UIImage(systemName: "plus.app.fill"))
         addImageView.contentMode = .scaleAspectFit
         containerView.addSubview(addImageView)
-        addImageView.translatesAutoresizingMaskIntoConstraints = false
-        addImageView.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 10).isActive = true
-        addImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
+        
+        addImageView.snp.makeConstraints { make in
+            make.left.equalToSuperview()
+            make.centerY.equalToSuperview()
+        }
         
         // add text
         titleLabel = UILabel()
@@ -106,14 +97,17 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         titleLabel.textColor = .label
         containerView.addSubview(titleLabel)
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        // export the right constraint to do animation
-        newProjectLabelRightConstraint = titleLabel.rightAnchor.constraint(equalTo: containerView.rightAnchor, constant: 0)
-        newProjectLabelRightConstraint.isActive = true
-        titleLabel.leftAnchor.constraint(equalTo: addImageView.rightAnchor, constant: 10).isActive = true
-        titleLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
+        titleLabel.snp.makeConstraints { make in
+            newProjectLabelRightConstraint = make.left.equalTo(addImageView.snp.right).inset(-10)
+            make.right.equalToSuperview().inset(0)
+            make.centerY.equalToSuperview()
+        }
         
-        containerView.heightAnchor.constraint(equalTo: addImageView.heightAnchor).isActive = true
+        // contraint to the center
+        containerView.snp.makeConstraints { make in
+            make.center.equalTo(headerView)
+            make.height.equalTo(addImageView.snp.height)
+        }
     }
     
     @objc func addButtonTapped() {
@@ -173,20 +167,33 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         let yOffset = scrollView.contentOffset.y
         
         if yOffset <= -tableViewContentInset {
-            heightConstraint.constant = headerMaxHeight
-            headerViewTopConstraint.constant = tableViewContentInset - headerMaxHeight
+            headerViewHeightConstraint.constraint.update(offset: headerMaxHeight)
+            headerViewTopConstraint.constraint.update(offset: tableViewContentInset - headerMaxHeight)
+//            heightConstraint.constant = headerMaxHeight
+//            
+//            headerView.snp.top.constant = tableViewContentInset - headerMaxHeight
+//            headerViewTopConstraint.constant = tableViewContentInset - headerMaxHeight
             titleLabel.alpha = 1
         } else if yOffset <= -headerMinHeight {
             let progress = (tableViewContentInset + yOffset) / (tableViewContentInset - headerMinHeight)
-            heightConstraint.constant = max(headerMinHeight, headerMaxHeight - (headerMaxHeight - headerMinHeight) * progress)
+//            heightConstraint.constant = max(headerMinHeight, headerMaxHeight - (headerMaxHeight - headerMinHeight) * progress)
+            
+            headerViewHeightConstraint.constraint.update(offset: max(headerMinHeight, headerMaxHeight - (headerMaxHeight - headerMinHeight) * progress))
+            newProjectLabelRightConstraint.constraint.update(inset: progress * titleLabel.frame.width)
+            headerViewTopConstraint.constraint.update(offset: -yOffset - headerViewHeightConstraint.constraint.layoutConstraints.first!.constant)
+            
             
             titleLabel.alpha = 1 - progress
-            newProjectLabelRightConstraint.constant = progress * titleLabel.frame.width
-            headerViewTopConstraint.constant = -yOffset - heightConstraint.constant
+            
+//            newProjectLabelRightConstraint.constant = progress * titleLabel.frame.width
+//            headerViewTopConstraint.constant = -yOffset - heightConstraint.constant
         } else {
-            heightConstraint.constant = headerMinHeight
-            newProjectLabelRightConstraint.constant = titleLabel.frame.width
-            headerViewTopConstraint.constant = 0
+            headerViewHeightConstraint.constraint.update(offset: headerMinHeight)
+            newProjectLabelRightConstraint.constraint.update(inset: titleLabel.frame.width)
+            headerViewTopConstraint.constraint.update(offset: 0)
+//            heightConstraint.constant = headerMinHeight
+//            newProjectLabelRightConstraint.constant = titleLabel.frame.width
+//            headerViewTopConstraint.constant = 0
             titleLabel.alpha = 0
         }
     }
@@ -211,18 +218,18 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             let progress = (tableViewContentInset + yOffset) / (tableViewContentInset - headerMinHeight)
             if progress >= 0.5 {
                // move up
-                self.heightConstraint.constant = self.headerMinHeight
-                self.newProjectLabelRightConstraint.constant = titleLabel.frame.width
-                self.headerViewTopConstraint.constant = 0
+//                self.heightConstraint.constant = self.headerMinHeight
+//                self.newProjectLabelRightConstraint.constant = titleLabel.frame.width
+//                self.headerViewTopConstraint.constant = 0
                 UIView.animate(withDuration: 0.5) {
                     self.view.layoutIfNeeded()
                     self.tableView.setContentOffset(CGPoint(x: 0, y: -self.headerMinHeight), animated: false)
                 }
             } else {
                 // move down
-                self.heightConstraint.constant = self.headerMaxHeight
-                self.newProjectLabelRightConstraint.constant = -10
-                self.headerViewTopConstraint.constant = self.headerTopInitialPadding
+//                self.heightConstraint.constant = self.headerMaxHeight
+//                self.newProjectLabelRightConstraint.constant = -10
+//                self.headerViewTopConstraint.constant = self.headerTopInitialPadding
                 UIView.animate(withDuration: 0.5) {
                     self.view.layoutIfNeeded()
                     self.tableView.setContentOffset(CGPoint(x: 0, y: -self.tableViewContentInset), animated: false)
