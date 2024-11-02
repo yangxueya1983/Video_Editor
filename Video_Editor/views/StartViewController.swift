@@ -344,7 +344,8 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             if progress >= 0.5 {
                // move up
                 addProjBtnHeightCstr.constraint.update(offset: headerMinHeight)
-                newProjLabelRightCstr.constraint.update(offset: titleLabel.frame.width)
+                // should be the same as in the did scroll counterpart
+                newProjLabelRightCstr.constraint.update(offset: titleLabel.frame.width - 10)
                 addProjBtnTopCstr.constraint.update(offset: 0)
                 UIView.animate(withDuration: 0.3) {
                     self.view.layoutIfNeeded()
