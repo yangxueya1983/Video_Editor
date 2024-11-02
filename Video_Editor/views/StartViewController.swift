@@ -270,6 +270,11 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        
+        // present the editor view
+        let editorVC = EditViewController()
+        editorVC.modalPresentationStyle = .fullScreen
+        present(editorVC, animated: true)
     }
     
     // MARK: - scrollview delegate
@@ -282,6 +287,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             addProjBtnTopCstr.constraint.update(offset: tableViewContentInset - headerMaxHeight)
             newProjLabelRightCstr.constraint.update(offset: -10)
             titleLabel.alpha = 1
+            headerView.alpha = 1
         } else if yOffset <= -headerMinHeight {
             // between min height and max height
             let progress = (tableViewContentInset + yOffset) / (tableViewContentInset - headerMinHeight)

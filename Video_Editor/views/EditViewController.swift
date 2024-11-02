@@ -33,7 +33,7 @@ struct EditView: UIViewControllerRepresentable {
 }
 
 struct EditViewConfig {
-    let headerHeight: CGFloat = 40
+    static let headerHeight: CGFloat = 40
 }
 
 class EditViewController: UIViewController, TimeLineControllerProtocol {
@@ -79,8 +79,8 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
         
         headerView.snp.makeConstraints { make in
             make.left.right.equalTo(self.view)
-            make.height.equalTo(EditViewConfig().headerHeight)
-            make.top.equalToSuperview()
+            make.height.equalTo(EditViewConfig.headerHeight)
+            make.top.equalTo(self.view.safeAreaLayoutGuide.snp.top)
         }
         
         // dismiss button
@@ -202,8 +202,9 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
         bottomView.addSubview(timeLineVC.view)
         
         timeLineVC.view.snp.makeConstraints { make in
-            make.left.right.bottom.equalToSuperview()
+            make.left.right.equalToSuperview()
             make.top.equalTo(bottomHeader.snp.bottom)
+            make.bottom.equalTo(self.view.safeAreaLayoutGuide.snp.bottom)
         }
         
         timeLineVC.delegate = self
@@ -355,6 +356,7 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
             return
         }
         
+        dismiss(animated: true)
         print("dismiss button pressed")
     }
     
@@ -468,7 +470,7 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
             let tolerance: CMTime = CMTimeMake(value: 1, timescale: 10)
             player.seek(to: targetTime, toleranceBefore: tolerance, toleranceAfter: tolerance) { finished in
                 if finished {
-                    print("seek to time \(targetTime.seconds) finished")
+//                    print("seek to time \(targetTime.seconds) finished")
                 }
             }
         }
