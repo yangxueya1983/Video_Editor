@@ -12,6 +12,7 @@ import SnapKit
 struct ArchiveProject {
     let createDate: Date
     let duration: CMTime
+    let representImage: UIImage
 }
 
 class StartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate {
