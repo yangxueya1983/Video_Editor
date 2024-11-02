@@ -22,8 +22,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     var headerViewHeightConstraint: ConstraintMakerEditable!
     var newProjectLabelRightConstraint: ConstraintMakerEditable!
     var headerViewTopConstraint: ConstraintMakerEditable!
-    
-//    var addIamgeViewLeftConstraint: NSLayoutConstraint!
+
     var titleLabel : UILabel!
     
     var archiveProjects: [ArchiveProject] = []
@@ -57,9 +56,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             headerViewTopConstraint =  make.top.equalTo(self.view.safeAreaLayoutGuide.snp.top).inset(headerTopInitialPadding)
             headerViewHeightConstraint = make.height.equalTo(headerMaxHeight)
         }
-        
 
-        
         tableView.showsVerticalScrollIndicator = false
         
         tableView.contentInset = UIEdgeInsets(top: tableViewContentInset, left: 0, bottom: 0, right: 0)
@@ -98,8 +95,8 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         titleLabel.textColor = .label
         containerView.addSubview(titleLabel)
         titleLabel.snp.makeConstraints { make in
-            newProjectLabelRightConstraint = make.left.equalTo(addImageView.snp.right).inset(-10)
-            make.right.equalToSuperview().inset(0)
+            make.left.equalTo(addImageView.snp.right).offset(10)
+            newProjectLabelRightConstraint = make.right.equalToSuperview().inset(0)
             make.centerY.equalToSuperview()
         }
         
@@ -169,31 +166,19 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         if yOffset <= -tableViewContentInset {
             headerViewHeightConstraint.constraint.update(offset: headerMaxHeight)
             headerViewTopConstraint.constraint.update(offset: tableViewContentInset - headerMaxHeight)
-//            heightConstraint.constant = headerMaxHeight
-//            
-//            headerView.snp.top.constant = tableViewContentInset - headerMaxHeight
-//            headerViewTopConstraint.constant = tableViewContentInset - headerMaxHeight
+            newProjectLabelRightConstraint.constraint.update(offset: 0)
             titleLabel.alpha = 1
         } else if yOffset <= -headerMinHeight {
             let progress = (tableViewContentInset + yOffset) / (tableViewContentInset - headerMinHeight)
-//            heightConstraint.constant = max(headerMinHeight, headerMaxHeight - (headerMaxHeight - headerMinHeight) * progress)
             
             headerViewHeightConstraint.constraint.update(offset: max(headerMinHeight, headerMaxHeight - (headerMaxHeight - headerMinHeight) * progress))
-            newProjectLabelRightConstraint.constraint.update(inset: progress * titleLabel.frame.width)
+            newProjectLabelRightConstraint.constraint.update(offset: progress * titleLabel.frame.width)
             headerViewTopConstraint.constraint.update(offset: -yOffset - headerViewHeightConstraint.constraint.layoutConstraints.first!.constant)
-            
-            
             titleLabel.alpha = 1 - progress
-            
-//            newProjectLabelRightConstraint.constant = progress * titleLabel.frame.width
-//            headerViewTopConstraint.constant = -yOffset - heightConstraint.constant
         } else {
             headerViewHeightConstraint.constraint.update(offset: headerMinHeight)
-            newProjectLabelRightConstraint.constraint.update(inset: titleLabel.frame.width)
+            newProjectLabelRightConstraint.constraint.update(offset: titleLabel.frame.width)
             headerViewTopConstraint.constraint.update(offset: 0)
-//            heightConstraint.constant = headerMinHeight
-//            newProjectLabelRightConstraint.constant = titleLabel.frame.width
-//            headerViewTopConstraint.constant = 0
             titleLabel.alpha = 0
         }
     }
@@ -221,19 +206,19 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
 //                self.heightConstraint.constant = self.headerMinHeight
 //                self.newProjectLabelRightConstraint.constant = titleLabel.frame.width
 //                self.headerViewTopConstraint.constant = 0
-                UIView.animate(withDuration: 0.5) {
-                    self.view.layoutIfNeeded()
-                    self.tableView.setContentOffset(CGPoint(x: 0, y: -self.headerMinHeight), animated: false)
-                }
+//                UIView.animate(withDuration: 0.5) {
+//                    self.view.layoutIfNeeded()
+//                    self.tableView.setContentOffset(CGPoint(x: 0, y: -self.headerMinHeight), animated: false)
+//                }
             } else {
                 // move down
 //                self.heightConstraint.constant = self.headerMaxHeight
 //                self.newProjectLabelRightConstraint.constant = -10
 //                self.headerViewTopConstraint.constant = self.headerTopInitialPadding
-                UIView.animate(withDuration: 0.5) {
-                    self.view.layoutIfNeeded()
-                    self.tableView.setContentOffset(CGPoint(x: 0, y: -self.tableViewContentInset), animated: false)
-                }
+//                UIView.animate(withDuration: 0.5) {
+//                    self.view.layoutIfNeeded()
+//                    self.tableView.setContentOffset(CGPoint(x: 0, y: -self.tableViewContentInset), animated: false)
+//                }
             }
         }
     }
