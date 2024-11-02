@@ -277,22 +277,33 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         let yOffset = scrollView.contentOffset.y
         
         if yOffset <= -tableViewContentInset {
+            // max height
             addProjBtnHeightCstr.constraint.update(offset: headerMaxHeight)
             addProjBtnTopCstr.constraint.update(offset: tableViewContentInset - headerMaxHeight)
             newProjLabelRightCstr.constraint.update(offset: -10)
             titleLabel.alpha = 1
         } else if yOffset <= -headerMinHeight {
+            // between min height and max height
             let progress = (tableViewContentInset + yOffset) / (tableViewContentInset - headerMinHeight)
             
             addProjBtnHeightCstr.constraint.update(offset: max(headerMinHeight, headerMaxHeight - (headerMaxHeight - headerMinHeight) * progress))
             newProjLabelRightCstr.constraint.update(offset: progress * titleLabel.frame.width - 10)
             addProjBtnTopCstr.constraint.update(offset: -yOffset - addProjBtnHeightCstr.constraint.layoutConstraints.first!.constant)
             titleLabel.alpha = 1 - progress
+            
+            // header view alpha is 0 when the progress is 25% or larger
+            let headerViewProgress = min(1.0, progress * 4)
+            headerView.alpha = 1 - headerViewProgress
+            
+            headerTopCstr.constraint.update(offset: -headerViewProgress * 20)
         } else {
+            // min height
             addProjBtnHeightCstr.constraint.update(offset: headerMinHeight)
             newProjLabelRightCstr.constraint.update(offset: titleLabel.frame.width - 10)
             addProjBtnTopCstr.constraint.update(offset: 0)
             titleLabel.alpha = 0
+            
+            headerView.alpha = 0
         }
     }
     
@@ -321,7 +332,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     @objc private func settingBtnTapped(_ btn: UIButton) {
-        
+        print("setting button pressed")
     }
     
     // MARK: - utility function
@@ -344,9 +355,12 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
                 addProjBtnHeightCstr.constraint.update(offset: headerMaxHeight)
                 newProjLabelRightCstr.constraint.update(offset: -10)
                 addProjBtnTopCstr.constraint.update(offset: tableViewContentInset - headerMaxHeight)
+                
+                headerTopCstr.constraint.update(offset: 0)
                 UIView.animate(withDuration: 0.3) {
                     self.view.layoutIfNeeded()
                     self.tableView.setContentOffset(CGPoint(x: 0, y: -self.tableViewContentInset), animated: false)
+                    self.headerView.alpha = 1
                 }
             }
         }
