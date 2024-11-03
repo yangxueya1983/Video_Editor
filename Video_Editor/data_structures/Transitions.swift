@@ -12,6 +12,14 @@ enum TransitionType : Int {
     case None
 }
 
+// factory design patterhn
+class TransitionFactory {
+    static func createCompositionInstruction(type: TransitionType) -> AVMutableVideoCompositionInstruction? {
+        
+        return nil
+    }
+}
+
 struct VideoTransition {
     let type: TransitionType
     let fromAssetIdx: Int
@@ -19,7 +27,7 @@ struct VideoTransition {
 }
 
 struct TransitionUtility {
-    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitions: [VideoTransition], transitionDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition)? {
+    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitions: [TransitionType], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition)? {
         
         if videoAssets.count != transitions.count - 1 || videoAssets.count != videoRanges.count || audioAssets.count != audioRanges.count {
             print("input error")
@@ -82,6 +90,7 @@ struct TransitionUtility {
         }
         
         let videoComposition = try await AVMutableVideoComposition.videoComposition(withPropertiesOf: composition)
+        videoComposition.customVideoCompositorClass = CustomVideoCompositor.self
         
         var instructionCfgs = [(CMTimeRange, [AVAssetTrack], TransitionType)]()
         // add video asset tracks
@@ -93,9 +102,48 @@ struct TransitionUtility {
             } else {
                 try videoTrack2.insertTimeRange(timeRange, of: videoTrack!, at: curInsertTime)
             }
+            
+            // all time ranges should be considered
+            let hasPreviousTrack = idx > 0
+            let hasNextTrack = idx < loadVideoTracks.count - 1
+            var transitionType: TransitionType = .None
+            if idx > 0 {
+                transitionType = transitions[idx-1]
+            }
+            
+            var singleTrackStartTime = curInsertTime
+            var singleTrackDuration = timeRange.duration
+            if hasPreviousTrack {
+                singleTrackStartTime = CMTimeAdd(curInsertTime, transitionDuration)
+                // subtract previous transition time
+                singleTrackDuration = CMTimeSubtract(timeRange.duration, transitionDuration)
+            }
+            if hasNextTrack {
+                // subtract the next transition time
+                singleTrackDuration = CMTimeSubtract(singleTrackDuration, transitionDuration)
+            }
+
+            if hasPreviousTrack {
+                // add transition instruction
+                let transitionTimeRange = CMTimeRange(start: curInsertTime, duration: transitionDuration)
+                // from track transition to to track
+                let instructionTracks = idx % 2 == 0 ? [videoTrack2, videoTrack1] : [videoTrack1, videoTrack2]
+                instructionCfgs.append((transitionTimeRange, instructionTracks, transitionType))
+            }
+            
+            // add single track instruction
+            instructionCfgs.append((CMTimeRange(start: singleTrackStartTime, duration: singleTrackDuration), [idx % 2 == 0 ? videoTrack1 : videoTrack2], .None))
+            
             curInsertTime = CMTimeAdd(curInsertTime, timeRange.duration)
-            curInsertTime = CMTimeSubtract(curInsertTime, transitionDuration)
+            if idx < loadVideoTracks.count - 1 {
+                // for not last element, subtract transition duration
+                curInsertTime = CMTimeSubtract(curInsertTime, transitionDuration)
+            }
         }
+        
+        videoComposition.instructions = generateInstructions(configures: instructionCfgs, totalTime: curInsertTime)
+        videoComposition.renderSize = videoSie
+        videoComposition.frameDuration = frameDuration
         
         // add layer instruction for video transitions
         for (idx, audioTrack) in loadAudioTracks.enumerated() {
@@ -108,20 +156,69 @@ struct TransitionUtility {
         return (composition, videoComposition)
     }
     
-    static func createTransitionInstruction(curTrack: AVAssetTrack, prevTrack: AVAssetTrack, timeRange: CMTimeRange, trans: TransitionType) -> [AVMutableVideoCompositionInstruction] {
+    private static func generateInstructions(configures: [(CMTimeRange, [AVAssetTrack], TransitionType)], totalTime: CMTime) -> [AVMutableVideoCompositionInstruction] {
+        var ret:[AVMutableVideoCompositionInstruction] = []
         
-        var ret: [AVMutableVideoCompositionInstruction] = []
+        // check time range correct or not
+        var check: Bool = true
+        var curTime: CMTime = .zero
+        for (timeRange, tracks, trans) in configures {
+            if curTime != timeRange.start {
+                check = false
+                break
+            }
+            
+            curTime = CMTimeAdd(curTime, timeRange.duration)
+        }
         
-        let i1 = AVMutableVideoCompositionInstruction()
-        i1.timeRange = timeRange
+        guard check else {
+            print("layer instruction check failed")
+            return ret
+        }
         
-        let l1 = AVMutableVideoCompositionLayerInstruction(assetTrack: curTrack)
-        l1.setOpacityRamp(fromStartOpacity: 0, toEndOpacity: 1, timeRange: timeRange)
-        let l2 = AVMutableVideoCompositionLayerInstruction(assetTrack: prevTrack)
-        l2.setOpacityRamp(fromStartOpacity: 1, toEndOpacity: 0, timeRange: timeRange)
-        i1.layerInstructions = [l1, l2]
-        ret.append(i1)
+        // add layer instrction
+        for (timeRange, tracks, trans) in configures {
+            if tracks.count == 1 {
+                let instruction = AVMutableVideoCompositionInstruction()
+                instruction.timeRange = timeRange
+                // layer instruction
+                let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: tracks[0])
+                instruction.layerInstructions = [layerInstruction]
+                ret.append(instruction)
+                continue
+            }
+            
+            assert(tracks.count == 2)
+            guard let instruction = TransitionFactory.createCompositionInstruction(type: trans) else {
+                assert(false)
+            }
+            instruction.timeRange = timeRange
+            let layerInstruction1 = AVMutableVideoCompositionLayerInstruction(assetTrack: tracks[0])
+            let layerInstruction2 = AVMutableVideoCompositionLayerInstruction(assetTrack: tracks[1])
+            // hacking the code to force to use custom transition
+            layerInstruction1.setOpacityRamp(fromStartOpacity: 0, toEndOpacity: 1, timeRange: timeRange)
+            layerInstruction2.setOpacityRamp(fromStartOpacity: 1, toEndOpacity: 0, timeRange: timeRange)
+            instruction.layerInstructions = [layerInstruction1, layerInstruction2]
+            ret.append(instruction)
+        }
+        
         return ret
     }
+    
+//    private static func createTransitionInstruction(curTrack: AVAssetTrack, prevTrack: AVAssetTrack, timeRange: CMTimeRange, trans: TransitionType) -> [AVMutableVideoCompositionInstruction] {
+//        
+//        var ret: [AVMutableVideoCompositionInstruction] = []
+//        
+//        let i1 = AVMutableVideoCompositionInstruction()
+//        i1.timeRange = timeRange
+//        
+//        let l1 = AVMutableVideoCompositionLayerInstruction(assetTrack: curTrack)
+//        l1.setOpacityRamp(fromStartOpacity: 0, toEndOpacity: 1, timeRange: timeRange)
+//        let l2 = AVMutableVideoCompositionLayerInstruction(assetTrack: prevTrack)
+//        l2.setOpacityRamp(fromStartOpacity: 1, toEndOpacity: 0, timeRange: timeRange)
+//        i1.layerInstructions = [l1, l2]
+//        ret.append(i1)
+//        return ret
+//    }
     
 }
