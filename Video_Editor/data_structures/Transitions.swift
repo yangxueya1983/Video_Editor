@@ -10,13 +10,20 @@ import AVFoundation
 
 enum TransitionType : Int {
     case None
+    case Dissolve
 }
 
 // factory design patterhn
 class TransitionFactory {
     static func createCompositionInstruction(type: TransitionType) -> AVMutableVideoCompositionInstruction? {
-        
-        return nil
+        switch type {
+        case .None:
+            return NoneTransCompsitionInstruction()
+        case .Dissolve:
+            return CrossDissolveCompositionInstruction()
+        default :
+            return nil
+        }
     }
 }
 
@@ -27,9 +34,9 @@ struct VideoTransition {
 }
 
 struct TransitionUtility {
-    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitions: [TransitionType], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition)? {
+    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], transitions: [TransitionType],audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition)? {
         
-        if videoAssets.count != transitions.count - 1 || videoAssets.count != videoRanges.count || audioAssets.count != audioRanges.count {
+        if videoAssets.count != transitions.count + 1 || videoAssets.count != videoRanges.count || audioAssets.count != audioRanges.count {
             print("input error")
             return nil
         }
@@ -46,7 +53,7 @@ struct TransitionUtility {
             return nil
         }
         
-        for i in 0..<audioAssets.count {
+        for _ in 0..<audioAssets.count {
             guard let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
                 print("composition create audio track failed")
                 return nil
@@ -204,21 +211,5 @@ struct TransitionUtility {
         
         return ret
     }
-    
-//    private static func createTransitionInstruction(curTrack: AVAssetTrack, prevTrack: AVAssetTrack, timeRange: CMTimeRange, trans: TransitionType) -> [AVMutableVideoCompositionInstruction] {
-//        
-//        var ret: [AVMutableVideoCompositionInstruction] = []
-//        
-//        let i1 = AVMutableVideoCompositionInstruction()
-//        i1.timeRange = timeRange
-//        
-//        let l1 = AVMutableVideoCompositionLayerInstruction(assetTrack: curTrack)
-//        l1.setOpacityRamp(fromStartOpacity: 0, toEndOpacity: 1, timeRange: timeRange)
-//        let l2 = AVMutableVideoCompositionLayerInstruction(assetTrack: prevTrack)
-//        l2.setOpacityRamp(fromStartOpacity: 1, toEndOpacity: 0, timeRange: timeRange)
-//        i1.layerInstructions = [l1, l2]
-//        ret.append(i1)
-//        return ret
-//    }
     
 }

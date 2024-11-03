@@ -53,6 +53,17 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
             
             let videoSize = renderContext.size
             
+            if asyncVideoCompositionRequest.sourceTrackIDs.count == 1 {
+                // pass through
+                guard let frame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[0].int32Value) else {
+                    print("compositor single track frame is nil")
+                    return
+                }
+                
+                asyncVideoCompositionRequest.finish(withComposedVideoFrame: frame)
+                return
+            }
+            
             // Retrieve source frames
             guard let foregroundFrame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[0].int32Value),
                   let backgroundFrame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[1].int32Value) else {

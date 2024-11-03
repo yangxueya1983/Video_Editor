@@ -73,5 +73,63 @@ struct Video_EditorTests {
         
         #expect(results.allSatisfy{$0 == nil})
     }
+    
+    @Test("test compose the videos")
+    func testComposeVideos() async throws {
+        let tmpDirectory = NSTemporaryDirectory()
+        let url1 = URL(fileURLWithPath: tmpDirectory + "test1.mp4")
+        let url2 = URL(fileURLWithPath: tmpDirectory + "test2.mp4")
+        let outURL = URL(filePath: tmpDirectory + "test_out.mp4")
+        
+        for url in [url1, url2, outURL] {
+            if FileManager.default.fileExists(atPath: url.path) {
+                _ = try FileManager.default.removeItem(at: url)
+            }
+        }
+        
+        // create two videos
+        let image1 = UIImage(named: "pic_1.jpg")!
+        let image2 = UIImage(named: "pic_2.jpg")!
+        let videoSize = CGSizeMake(1024, 768)
+        let duration = CMTimeMake(value: 5, timescale: 1)
+        let error1 = try await generateVideo(image: image1, size: videoSize, duration: duration, url: url1)
+        let error2 = try await generateVideo(image: image2, size: videoSize, duration: duration, url: url2)
+        #expect(error1 == nil && error2 == nil)
+        
+        // load the assets
+        let asset1 = AVURLAsset(url: url1)
+        let asset2 = AVURLAsset(url: url2)
+        
+        let range1 = CMTimeRangeMake(start: .zero, duration: duration)
+        let range2 = CMTimeRangeMake(start: .zero, duration: duration)
+        
+        let transitionTypes: [TransitionType] = [.None]
+        
+        guard let (composition, videoComposition) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 30)) else {
+            #expect(Bool(false))
+            return
+        }
+        
+        // export
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            #expect(Bool(false))
+            return
+        }
+        
+        print("will output to \(outURL.path)")
+        exportSession.outputURL = outURL
+        exportSession.outputFileType = .mp4
+        exportSession.videoComposition = videoComposition
+        
+        await exportSession.export()
+        #expect(FileManager.default.fileExists(atPath: outURL.path))
+        #expect(exportSession.status == .completed)
+        
+        // check the duration of the asset
+        let asset = AVURLAsset(url: outURL)
+        let d = try await asset.load(.duration)
+        print("output duration: \(d.seconds)")
+        #expect(d.seconds ==  9.5)
+    }
 
 }
