@@ -10,3 +10,7 @@ import Foundation
 struct MediaSetting {
     static let photoMaxDuration: CGFloat = 5
 }
+
+struct EditorSetting {
+    static let transitionTime: CGFloat = 0.5
+}

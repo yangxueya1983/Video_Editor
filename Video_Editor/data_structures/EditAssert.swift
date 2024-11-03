@@ -54,11 +54,12 @@ class PhotoEditAsset : VisualEditAsset {
     
     override func preprocess() -> Bool {
         // TODO: implement for the photo library
-        
         return true
     }
     
-    
+    private func generateRepresentImgVideo() {
+        
+    }
 }
 
 class VideoEditAsset: VisualEditAsset {
