@@ -109,4 +109,15 @@ class MoveDownInstruction: CustomVideoCompositionInstructionBase {
     }
 }
 
-
+class PageCurlInstruction : CustomVideoCompositionInstructionBase {
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ progress: CGFloat, _ size: CGSize) -> CIImage? {
+        let transitionFilter = CIFilter.pageCurlTransition()
+        transitionFilter.inputImage = backgroundSample
+        transitionFilter.targetImage = frontSample
+        transitionFilter.time = Float(progress) // Adjust the time from 0 to 1 to control the transition progress
+        transitionFilter.angle = Float(Double.pi) // Control the angle of the curl
+        transitionFilter.radius = 100.0 // Control the radius of the curl
+        transitionFilter.extent = frontSample.extent // Set the extent of the transition
+        return transitionFilter.outputImage
+    }
+}

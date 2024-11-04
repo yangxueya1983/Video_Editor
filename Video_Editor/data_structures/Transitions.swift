@@ -16,6 +16,7 @@ enum TransitionType : Int {
     case MoveRight
     case MoveUp
     case MoveDown
+    case PageCurl
 }
 
 // factory design patterhn
@@ -36,6 +37,8 @@ class TransitionFactory {
             return MoveUpInstruction()
         case .MoveDown:
             return MoveDownInstruction()
+        case .PageCurl:
+            return PageCurlInstruction()
         default :
             return nil
         }

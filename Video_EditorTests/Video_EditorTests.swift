@@ -76,6 +76,7 @@ struct Video_EditorTests {
     
     
     func testComposeVideos(transitionType: TransitionType) async throws {
+        print("test type \(transitionType)")
         let tmpDirectory = NSTemporaryDirectory()
         let url1 = URL(fileURLWithPath: tmpDirectory + "test1.mp4")
         let url2 = URL(fileURLWithPath: tmpDirectory + "test2.mp4")
@@ -141,7 +142,8 @@ struct Video_EditorTests {
 //        try await testComposeVideos(transitionType: .MoveRight)
 //        try await testComposeVideos(transitionType: .MoveUp)
 //        try await testComposeVideos(transitionType: .MoveDown)
-        try await testComposeVideos(transitionType: .DissolveMoveLeft)
+//        try await testComposeVideos(transitionType: .DissolveMoveLeft)
+        try await testComposeVideos(transitionType: .PageCurl)
     }
     
     
