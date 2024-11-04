@@ -27,3 +27,86 @@ class CrossDissolveCompositionInstruction : CustomVideoCompositionInstructionBas
         return blendedImage
     }
 }
+
+class CircleEnlargerCompositionInstruction : CustomVideoCompositionInstructionBase {
+    func createCenterRadiusMask(size: CGSize, progress: CGFloat) -> CIImage? {
+        let center = CIVector(x: size.width / 2, y: size.height / 2)
+        let radius = sqrt(size.width * size.width +  size.height * size.height) / 2  * progress
+        
+        // Create a radial gradient filter for the transition effect
+        let gradientFilter = CIFilter(name: "CIRadialGradient")!
+        gradientFilter.setValue(center, forKey: "inputCenter")
+        gradientFilter.setValue(radius, forKey: "inputRadius0") // Inner radius (start of gradient)
+        gradientFilter.setValue(radius + 1, forKey: "inputRadius1") // Outer radius (end of gradient)
+        gradientFilter.setValue(CIColor.white, forKey: "inputColor0") // Inside color (visible area)
+        gradientFilter.setValue(CIColor.black, forKey: "inputColor1") // Outside color (masked area)
+        
+        // Crop the gradient to the image size
+        return gradientFilter.outputImage?.cropped(to: CGRect(origin: .zero, size: size))
+    }
+    
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ process: CGFloat, _ size: CGSize) -> CIImage? {
+        let maskImage = self.createCenterRadiusMask(size: size, progress: process)
+        let blendFilter = CIFilter(name: "CIBlendWithMask")
+        blendFilter?.setValue(frontSample, forKey: kCIInputImageKey)
+        blendFilter?.setValue(backgroundSample, forKey: kCIInputBackgroundImageKey)
+        blendFilter?.setValue(maskImage, forKey: kCIInputMaskImageKey)
+        
+        return blendFilter?.outputImage
+    }
+}
+
+
+class MoveLeftInstruction : CustomVideoCompositionInstructionBase {
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ process: CGFloat, _ size: CGSize) -> CIImage? {
+        let offset = -size.width * process
+        let transform = CGAffineTransformMakeTranslation(offset, 0)
+        let transformImage = backgroundSample.applyingFilter("CIAffineTransform", parameters: [kCIInputTransformKey : transform])
+        let outImage = transformImage.applyingFilter("CISourceAtopCompositing", parameters: [
+            kCIInputBackgroundImageKey : frontSample
+        ])
+        
+        return outImage
+    }
+}
+
+class MoveRightInstruction : CustomVideoCompositionInstructionBase {
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ process: CGFloat, _ size: CGSize) -> CIImage? {
+        let offset = size.width * process
+        let transform = CGAffineTransformMakeTranslation(offset, 0)
+        let transformImage = backgroundSample.applyingFilter("CIAffineTransform", parameters: [kCIInputTransformKey : transform])
+        let outImage = transformImage.applyingFilter("CISourceAtopCompositing", parameters: [
+            kCIInputBackgroundImageKey : frontSample
+        ])
+        
+        return outImage
+    }
+}
+
+class MoveUpInstruction: CustomVideoCompositionInstructionBase {
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ process: CGFloat, _ size: CGSize) -> CIImage? {
+        let offset = size.height * process
+        let transform = CGAffineTransformMakeTranslation(0, offset)
+        let transformImage = backgroundSample.applyingFilter("CIAffineTransform", parameters: [kCIInputTransformKey : transform])
+        let outImage = transformImage.applyingFilter("CISourceAtopCompositing", parameters: [
+            kCIInputBackgroundImageKey : frontSample
+        ])
+        
+        return outImage
+    }
+}
+
+class MoveDownInstruction: CustomVideoCompositionInstructionBase {
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ process: CGFloat, _ size: CGSize) -> CIImage? {
+        let offset = -size.height * process
+        let transform = CGAffineTransformMakeTranslation(0, offset)
+        let transformImage = backgroundSample.applyingFilter("CIAffineTransform", parameters: [kCIInputTransformKey : transform])
+        let outImage = transformImage.applyingFilter("CISourceAtopCompositing", parameters: [
+            kCIInputBackgroundImageKey : frontSample
+        ])
+        
+        return outImage
+    }
+}
+
+

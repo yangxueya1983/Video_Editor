@@ -11,6 +11,11 @@ import AVFoundation
 enum TransitionType : Int {
     case None
     case Dissolve
+    case CircleEnlarge
+    case MoveLeft
+    case MoveRight
+    case MoveUp
+    case MoveDown
 }
 
 // factory design patterhn
@@ -21,6 +26,16 @@ class TransitionFactory {
             return NoneTransCompsitionInstruction()
         case .Dissolve:
             return CrossDissolveCompositionInstruction()
+        case .CircleEnlarge:
+            return CircleEnlargerCompositionInstruction()
+        case .MoveLeft:
+            return MoveLeftInstruction()
+        case .MoveRight:
+            return MoveRightInstruction()
+        case .MoveUp:
+            return MoveUpInstruction()
+        case .MoveDown:
+            return MoveDownInstruction()
         default :
             return nil
         }

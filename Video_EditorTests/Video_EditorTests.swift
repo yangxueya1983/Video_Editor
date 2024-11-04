@@ -91,7 +91,7 @@ struct Video_EditorTests {
         let image1 = UIImage(named: "pic_1.jpg")!
         let image2 = UIImage(named: "pic_2.jpg")!
         let videoSize = CGSizeMake(1024, 768)
-        let duration = CMTimeMake(value: 5, timescale: 1)
+        let duration = CMTimeMake(value: 2, timescale: 1)
         let error1 = try await generateVideo(image: image1, size: videoSize, duration: duration, url: url1)
         let error2 = try await generateVideo(image: image2, size: videoSize, duration: duration, url: url2)
         #expect(error1 == nil && error2 == nil)
@@ -129,13 +129,19 @@ struct Video_EditorTests {
         let asset = AVURLAsset(url: outURL)
         let d = try await asset.load(.duration)
         print("output duration: \(d.seconds)")
-        #expect(d.seconds ==  9.5)
+        #expect(d.seconds ==  3.5)
     }
     
     @Test("test none transition type")
     func testNoneTransitionType() async throws {
 //        try await testComposeVideos(transitionType: .None)
-        try await testComposeVideos(transitionType: .Dissolve)
+//        try await testComposeVideos(transitionType: .Dissolve)
+//        try await testComposeVideos(transitionType: .CircleEnlarge)
+//        try await testComposeVideos(transitionType: .MoveLeft)
+//        try await testComposeVideos(transitionType: .MoveRight)
+//        try await testComposeVideos(transitionType: .MoveUp)
+//        try await testComposeVideos(transitionType: .MoveDown)
+        try await testComposeVideos(transitionType: .DissolveMoveLeft)
     }
     
     
