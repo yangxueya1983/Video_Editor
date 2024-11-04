@@ -133,8 +133,8 @@ struct TransitionUtility {
             if hasPreviousTrack {
                 // add transition instruction
                 let transitionTimeRange = CMTimeRange(start: curInsertTime, duration: transitionDuration)
-                // from track transition to to track
-                let instructionTracks = idx % 2 == 0 ? [videoTrack2, videoTrack1] : [videoTrack1, videoTrack2]
+                // front sample, background sample
+                let instructionTracks = idx % 2 == 0 ? [videoTrack1, videoTrack2] : [videoTrack2, videoTrack1]
                 instructionCfgs.append((transitionTimeRange, instructionTracks, transitionType))
             }
             

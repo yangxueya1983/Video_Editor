@@ -74,8 +74,8 @@ struct Video_EditorTests {
         #expect(results.allSatisfy{$0 == nil})
     }
     
-    @Test("test compose the videos")
-    func testComposeVideos() async throws {
+    
+    func testComposeVideos(transitionType: TransitionType) async throws {
         let tmpDirectory = NSTemporaryDirectory()
         let url1 = URL(fileURLWithPath: tmpDirectory + "test1.mp4")
         let url2 = URL(fileURLWithPath: tmpDirectory + "test2.mp4")
@@ -103,7 +103,7 @@ struct Video_EditorTests {
         let range1 = CMTimeRangeMake(start: .zero, duration: duration)
         let range2 = CMTimeRangeMake(start: .zero, duration: duration)
         
-        let transitionTypes: [TransitionType] = [.None]
+        let transitionTypes: [TransitionType] = [transitionType]
         
         guard let (composition, videoComposition) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 30)) else {
             #expect(Bool(false))
@@ -131,5 +131,13 @@ struct Video_EditorTests {
         print("output duration: \(d.seconds)")
         #expect(d.seconds ==  9.5)
     }
+    
+    @Test("test none transition type")
+    func testNoneTransitionType() async throws {
+//        try await testComposeVideos(transitionType: .None)
+        try await testComposeVideos(transitionType: .Dissolve)
+    }
+    
+    
 
 }

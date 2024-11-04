@@ -54,7 +54,7 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
             let videoSize = renderContext.size
             
             if asyncVideoCompositionRequest.sourceTrackIDs.count == 1 {
-                // pass through
+                // pass through for only 1 track
                 guard let frame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[0].int32Value) else {
                     print("compositor single track frame is nil")
                     return
@@ -72,7 +72,9 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
             }
             
             // Apply transition effect (crossfade example)
-            let transitionFactor =  CGFloat(CMTimeGetSeconds(asyncVideoCompositionRequest.compositionTime) / CMTimeGetSeconds(asyncVideoCompositionRequest.videoCompositionInstruction.timeRange.duration))
+            let instrTimeRange = asyncVideoCompositionRequest.videoCompositionInstruction.timeRange
+            assert(CMTimeCompare(instrTimeRange.start, asyncVideoCompositionRequest.compositionTime) <= 0)
+            let transitionFactor =  CGFloat(CMTimeGetSeconds(CMTimeSubtract(asyncVideoCompositionRequest.compositionTime, instrTimeRange.start)))  / CMTimeGetSeconds(asyncVideoCompositionRequest.videoCompositionInstruction.timeRange.duration)
             let outputPixelBuffer = renderContext.newPixelBuffer()
             
             // Create CIImages from the pixel buffers
