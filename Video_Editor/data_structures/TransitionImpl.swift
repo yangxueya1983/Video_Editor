@@ -121,3 +121,53 @@ class PageCurlInstruction : CustomVideoCompositionInstructionBase {
         return transitionFilter.outputImage
     }
 }
+
+class RadiusTransitionFilter: CIFilter {
+    private static var kernel: CIKernel? = {
+        guard let device = MTLCreateSystemDefaultDevice(),
+              let libraryPath = Bundle.main.path(forResource: "default", ofType: "metallib"),
+              let libraryData = try? Data(contentsOf: URL(fileURLWithPath: libraryPath)) else {
+            return nil
+        }
+        
+        return try? CIKernel(functionName: "radiusTransitionFilter", fromMetalLibraryData: libraryData)
+    }()
+    
+    var inputImage: CIImage?
+    var backgroundImage: CIImage?
+    var progress: CGFloat = 0.0
+    
+    override var outputImage: CIImage? {
+        guard let inputImage, let backgroundImage else {
+            return nil
+        }
+        
+        let size = inputImage.extent.size
+        
+        let args = [inputImage, backgroundImage, progress] as [Any]
+        
+        
+        return type(of: self).kernel?.apply(extent: inputImage.extent, roiCallback: { idx, rect in
+            return rect
+        }, arguments: args)
+    }
+}
+
+class RadiusRotateInstruction : CustomVideoCompositionInstructionBase {
+    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ progress: CGFloat, _ size: CGSize) -> CIImage? {
+        let transitionFilter = RadiusTransitionFilter()
+        transitionFilter.inputImage = frontSample
+        transitionFilter.backgroundImage = backgroundSample
+        transitionFilter.progress = progress
+        
+        return transitionFilter.outputImage
+    }
+}
+
+//class RadiusInstruction : CustomVideoCompositionInstructionBase {
+//    override func compose(_ frontSample: CIImage, _ backgroundSample: CIImage, _ progress: CGFloat, _ size: CGSize) -> CIImage? {
+//        let transitionFilter = CIFilter.radiusTransition()
+//        transitionFilter.inputImage = backgroundSample
+//        transitionFilter.targetImage = frontSample
+//    }
+//}

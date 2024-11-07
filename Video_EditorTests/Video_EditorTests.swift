@@ -75,12 +75,12 @@ struct Video_EditorTests {
     }
     
     
-    func testComposeVideos(transitionType: TransitionType) async throws {
+    func testComposeVideos(transitionType: TransitionType, outputFileName: String) async throws {
         print("test type \(transitionType)")
         let tmpDirectory = NSTemporaryDirectory()
         let url1 = URL(fileURLWithPath: tmpDirectory + "test1.mp4")
         let url2 = URL(fileURLWithPath: tmpDirectory + "test2.mp4")
-        let outURL = URL(filePath: tmpDirectory + "test_out.mp4")
+        let outURL = URL(filePath: tmpDirectory + outputFileName + ".mp4")
         
         for url in [url1, url2, outURL] {
             if FileManager.default.fileExists(atPath: url.path) {
@@ -106,7 +106,7 @@ struct Video_EditorTests {
         
         let transitionTypes: [TransitionType] = [transitionType]
         
-        guard let (composition, videoComposition) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 30)) else {
+        guard let (composition, videoComposition) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 60)) else {
             #expect(Bool(false))
             return
         }
@@ -135,17 +135,14 @@ struct Video_EditorTests {
     
     @Test("test none transition type")
     func testNoneTransitionType() async throws {
-//        try await testComposeVideos(transitionType: .None)
-//        try await testComposeVideos(transitionType: .Dissolve)
-//        try await testComposeVideos(transitionType: .CircleEnlarge)
-//        try await testComposeVideos(transitionType: .MoveLeft)
-//        try await testComposeVideos(transitionType: .MoveRight)
-//        try await testComposeVideos(transitionType: .MoveUp)
-//        try await testComposeVideos(transitionType: .MoveDown)
-//        try await testComposeVideos(transitionType: .DissolveMoveLeft)
-        try await testComposeVideos(transitionType: .PageCurl)
+//        try await testComposeVideos(transitionType: .None, outputFileName: "none")
+//        try await testComposeVideos(transitionType: .Dissolve, outputFileName: "disolve")
+//        try await testComposeVideos(transitionType: .CircleEnlarge, outputFileName: "circle_enlarge")
+//        try await testComposeVideos(transitionType: .MoveLeft, outputFileName: "move_left")
+//        try await testComposeVideos(transitionType: .MoveRight, outputFileName: "move_right")
+//        try await testComposeVideos(transitionType: .MoveUp, outputFileName: "move_up")
+//        try await testComposeVideos(transitionType: .MoveDown, outputFileName: "move_down")
+//        try await testComposeVideos(transitionType: .PageCurl, outputFileName: "page_curl")
+        try await testComposeVideos(transitionType: .RadiusRotate, outputFileName: "radius_rotate")
     }
-    
-    
-
 }

@@ -17,6 +17,7 @@ enum TransitionType : Int {
     case MoveUp
     case MoveDown
     case PageCurl
+    case RadiusRotate
 }
 
 // factory design patterhn
@@ -39,6 +40,8 @@ class TransitionFactory {
             return MoveDownInstruction()
         case .PageCurl:
             return PageCurlInstruction()
+        case .RadiusRotate:
+            return RadiusRotateInstruction()
         default :
             return nil
         }
@@ -80,15 +83,16 @@ struct TransitionUtility {
         }
         
         // load video tracks simultaneously
-        var loadVideoTracks = [AVAssetTrack?]()
-        try await withThrowingTaskGroup(of: AVAssetTrack?.self, body: { group in
-            for asset in videoAssets {
+        var loadVideoTracks : [AVAssetTrack?] = Array(repeating: nil, count: videoAssets.count)
+        try await withThrowingTaskGroup(of: (Int, AVAssetTrack?).self, body: { group in
+            for (index,asset) in videoAssets.enumerated() {
                 group.addTask {
-                    return try await asset.loadTracks(withMediaType: .video).first
+                    let asset = try await asset.loadTracks(withMediaType: .video).first
+                    return (index, asset)
                 }
             }
-            for try await result in group {
-                loadVideoTracks.append(result)
+            for try await (idx, result) in group {
+                loadVideoTracks[idx] = result
             }
         })
         
