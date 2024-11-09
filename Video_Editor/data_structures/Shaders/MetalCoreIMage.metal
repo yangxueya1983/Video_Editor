@@ -23,7 +23,7 @@ half4 radiusTransitionFilter(coreimage::sampler frontImage, coreimage::sampler b
     
     float2 v1 = position - center;
     // horizental vector
-    float2 v2 = float2(1, 0);
+//    float2 v2 = float2(1, 0);
     
     float angle = atan2(v1.y, v1.x);
     angle = angle >= 0? angle: (angle + 2 * M_PI_F);

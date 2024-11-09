@@ -73,4 +73,22 @@ struct PhotoMediaUtility {
         
         return nil
     }
+    
+    static func scaleImage(_ image: UIImage, toMaxSize maxSize: CGFloat) -> UIImage? {
+        let originalSize = image.size
+        let widthRatio = maxSize / originalSize.width
+        let heightRatio = maxSize / originalSize.height
+        let scaleFactor = min(widthRatio, heightRatio)  // Scale down to fit within maxSize
+        
+        // Calculate the new size
+        let newSize = CGSize(width: originalSize.width * scaleFactor, height: originalSize.height * scaleFactor)
+        
+        // Create a new image context and draw the resized image
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 0.0)  // 0.0 uses the device's scale (e.g., Retina)
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        let scaledImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return scaledImage
+    }
 }
