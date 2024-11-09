@@ -18,6 +18,9 @@ class EditAsset {
     let id = UUID()
     let url: URL
     let cacheDir: String
+    var asset: AVAsset?
+    var selectTimeRange: CMTimeRange = .zero
+    var maxDuration: CMTime = .zero
     
     init(url: URL, cacheDir: String) {
         self.url = url
@@ -113,6 +116,12 @@ class PhotoEditAsset : VisualEditAsset {
                 print("generate video failed for error: \(error)")
                 return false
             }
+            
+            // load the asset
+            asset = AVURLAsset(url: targetUrl)
+            // select time range is 5 seconds
+            selectTimeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: 5, preferredTimescale: 1000))
+            maxDuration = CMTime(seconds: 5, preferredTimescale: 1000)
         } catch {
             print("generate video failed for error: \(error)")
             return false

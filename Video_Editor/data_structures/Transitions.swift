@@ -50,8 +50,8 @@ class TransitionFactory {
 
 struct VideoTransition {
     let type: TransitionType
-    let fromAssetIdx: Int
-    let toAssetIdx: Int
+//    let fromAssetIdx: Int
+//    let toAssetIdx: Int
 }
 
 struct TransitionUtility {
