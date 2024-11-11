@@ -408,40 +408,59 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         var images: [UIImage?] = Array(repeating: nil, count: results.count)
         
-        for (idx,result) in results.enumerated() {
-            Task {
-                do {
-                    if let image = try await loadImage(from: result) {
-                        images[idx] = image
+        // let the heavy job done here
+        
+        Task {
+            do {
+                try await withThrowingTaskGroup(of: (Int, UIImage?).self, body: { group in
+                    for (index, result) in results.enumerated() {
+                        group.addTask {
+                            let image  = try await self.loadImage(from: result)
+                            return (index, image)
+                        }
                     }
-                } catch {
-                    print("Error loading image: \(error)")
+                    
+                    for try await (idx, result) in group {
+                        images[idx] = result
+                    }
+                })
+            } catch {
+                printContent("Error loading images: \(error)")
+            }
+            
+            guard images.allSatisfy({$0 != nil}) else {
+                DispatchQueue.main.async {
+                    print("load images failed")
+                    picker.dismiss(animated: true)
+                }
+                return
+            }
+            
+            // TODO: create projects from the images
+            guard let projPath = ProjectManager.sharedMgr.getNextProjectDir() else {
+                print("could not get the next project directory")
+                picker.dismiss(animated: true)
+                return
+            }
+            
+            let project = EditProject(dir: projPath)
+            
+            for image in images {
+                guard let image, let assetDir = project.getNextAssetDirectory() else { continue }
+                let photoAsset = PhotoEditAsset(image: image, cacheDir: assetDir)
+                if !project.addVisualAsset(photoAsset) {
+                    assert(false)
                 }
             }
-        }
-        
-        // TODO: create projects from the images
-        guard let projPath = ProjectManager.sharedMgr.getNextProjectDir() else {
-            print("could not get the next project directory")
-            picker.dismiss(animated: true)
-            return
-        }
-        
-        let project = EditProject(dir: projPath)
-        
-        for image in images {
-            guard let image, let assetDir = project.getNextAssetDirectory() else { continue }
-            let photoAsset = PhotoEditAsset(image: image, cacheDir: assetDir)
-            if !project.addVisualAsset(photoAsset) {
-                assert(false)
+            
+            DispatchQueue.main.async {
+                picker.dismiss(animated: false) {
+                    let editorVC = EditViewController()
+                    editorVC.project = project
+                    editorVC.modalPresentationStyle = .fullScreen
+                    self.present(editorVC, animated: true)
+                }
             }
-        }
-        
-        picker.dismiss(animated: false) {
-            let editorVC = EditViewController()
-            editorVC.project = project
-            editorVC.modalPresentationStyle = .fullScreen
-            self.present(editorVC, animated: true)
         }
     }
     

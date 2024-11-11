@@ -60,6 +60,8 @@ class PhotoEditAsset : VisualEditAsset {
     var representImage: UIImage?
     var origImage: UIImage?
     
+    private var processed = false
+    
     // in the cacahe direcotry already
     var representImgPath: String {
         get { return cacheDir + "/represent_img.jpg"}
@@ -82,6 +84,11 @@ class PhotoEditAsset : VisualEditAsset {
     }
     
     override func process() async -> Bool {
+        if processed == true {
+            return true
+        }
+        
+        processed = true
         return await generateFileDataFromLocal()
     }
     

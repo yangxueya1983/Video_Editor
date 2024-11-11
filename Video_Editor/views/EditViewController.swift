@@ -68,6 +68,21 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
         configureVideoConfigureView()
         
         self.view.backgroundColor = .init(hex: "#141414")
+        
+        Task {
+            // first make each edit asset
+            let start = Date()
+            let ok = try await project.createCompositionAsset()
+            let end = Date()
+            print("create composition asset time: \(end.timeIntervalSince(start))")
+            
+            if ok {
+                await MainActor.run {
+                    player.replaceCurrentItem(with: AVPlayerItem(asset: project.composition!))
+                    player.currentItem?.videoComposition = project.videoComposition
+                }
+            }
+        }
     }
     
     override func viewDidLayoutSubviews() {

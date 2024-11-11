@@ -20,8 +20,8 @@ class EditProject {
 
     private var id2AssetMap: [UUID: EditAsset] = [:]
     
-    private var composition: AVMutableComposition?
-    private var videoComposition: AVMutableVideoComposition?
+    var composition: AVMutableComposition?
+    var videoComposition: AVMutableVideoComposition?
     private let dir: String
 
     init(dir: String) {
@@ -53,7 +53,11 @@ class EditProject {
     
     /// create the composition after project update
     /// - Returns: (compisition, videoComposition)?
-    func createCompositionAsset() async throws -> (AVMutableComposition, AVMutableVideoComposition)? {
+    func createCompositionAsset() async throws -> Bool {
+        guard try await prepareAssets() else {
+            return false
+        }
+        
         let assets = visualAssets.map(\.asset!)
         let selectRanges = visualAssets.map(\.selectTimeRange)
         let transitions = transitions.map(\.type)
@@ -72,12 +76,12 @@ class EditProject {
             transitionDuration: transitionDuration,
             videoSie: videoSize,
             frameDuration: frameRate) else {
-            return nil
+            return false
         }
         
         composition = mixComp
         videoComposition = videoComp
-        return (mixComp, videoComp)
+        return true
     }
 
     func swapAsset(_ asset1: VisualEditAsset, _ asset2: VisualEditAsset) -> Bool {
@@ -129,8 +133,26 @@ class EditProject {
         return true
     }
     
+    private func prepareAssets() async throws-> Bool {
+        var results : [Bool] = Array(repeating: false, count: visualAssets.count)
+        try await withThrowingTaskGroup(of: (Int, Bool).self, body: { group in
+            for (idx,visualAsset) in visualAssets.enumerated() {
+                group.addTask {
+                    let ok = await visualAsset.process()
+                    return (idx, ok)
+                }
+            }
+            
+            for try await (idx, result) in group {
+                results[idx] = result
+            }
+        })
+        
+        return results.allSatisfy({$0 == true})
+    }
+    
     private func check() -> Bool {
-        if !visualAssets.isEmpty && visualAssets.count - 1 == transitions.count {
+        if !visualAssets.isEmpty && visualAssets.count - 1 != transitions.count {
             return false
         }
 
