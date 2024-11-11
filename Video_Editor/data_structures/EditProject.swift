@@ -133,6 +133,31 @@ class EditProject {
         return true
     }
     
+    func export(to url: URL) async throws -> Bool {
+        guard let asset = composition else {
+            print("Error: asset is not ready")
+            return false
+        }
+        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality) else {
+            print("Error: export ession create failed")
+            return false
+        }
+        
+        exportSession.outputURL = url
+        exportSession.outputFileType = .mp4
+        exportSession.videoComposition = videoComposition
+        
+        
+        await exportSession.export()
+        switch exportSession.status {
+        case .completed:
+            return true
+        default:
+            print("export error : \(exportSession.error?.localizedDescription ?? "")")
+            return false
+        }
+    }
+    
     private func prepareAssets() async throws-> Bool {
         var results : [Bool] = Array(repeating: false, count: visualAssets.count)
         try await withThrowingTaskGroup(of: (Int, Bool).self, body: { group in

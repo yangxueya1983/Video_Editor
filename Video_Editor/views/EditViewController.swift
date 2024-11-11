@@ -68,21 +68,6 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
         configureVideoConfigureView()
         
         self.view.backgroundColor = .init(hex: "#141414")
-        
-        Task {
-            // first make each edit asset
-            let start = Date()
-            let ok = try await project.createCompositionAsset()
-            let end = Date()
-            print("create composition asset time: \(end.timeIntervalSince(start))")
-            
-            if ok {
-                await MainActor.run {
-                    player.replaceCurrentItem(with: AVPlayerItem(asset: project.composition!))
-                    player.currentItem?.videoComposition = project.videoComposition
-                }
-            }
-        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -255,22 +240,51 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
             return
         }
         Task {
-            await addVideoTrackToComposition(composition: composition, videoURL: videoUrl)
-            let playerItem = AVPlayerItem(asset: composition)
-            player = AVPlayer(playerItem: playerItem)
-            playerLayer = AVPlayerLayer(player: player)
-            playerLayer?.videoGravity = .resizeAspectFill
-            playerView.layer.addSublayer(playerLayer!)
-            playerLayer?.frame = playerView.bounds
+            // first make each edit asset
+            let start = Date()
+            var ok = try await project.createCompositionAsset()
+            let end = Date()
+            print("create composition asset time: \(end.timeIntervalSince(start))")
             
-            let timeInterval = CMTime(seconds: 0.03, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-            
-            timeObserverToken = player.addPeriodicTimeObserver(forInterval: timeInterval, queue: .main) { [weak self] time in
-                guard let self else { return }
-                Task { @MainActor in
-                    self.playerTimeChagne(time: time)
+            if !ok {
+                print("create composition asset failed")
+                return
+            }
+
+            DispatchQueue.main.async {
+                let playerItem = AVPlayerItem(asset: self.project.composition!)
+                playerItem.videoComposition = self.project.videoComposition
+                self.player = AVPlayer(playerItem: playerItem)
+                self.playerLayer = AVPlayerLayer(player: self.player)
+                self.playerLayer?.videoGravity = .resizeAspectFill
+                self.playerView.layer.addSublayer(self.playerLayer!)
+                self.playerLayer?.frame = self.playerView.bounds
+                
+                let timeInterval = CMTime(seconds: 0.03, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+                
+                self.timeObserverToken = self.player.addPeriodicTimeObserver(forInterval: timeInterval, queue: .main) { [weak self] time in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        self.playerTimeChagne(time: time)
+                    }
                 }
             }
+            
+            // export to cache dir for testing
+//            let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+//            let cacheUrl = cacheDir.appendingPathComponent("test.mp4")
+//            
+//            if FileManager.default.fileExists(atPath: cacheUrl.path) {
+//                _ = try? FileManager.default.removeItem(at: cacheUrl)
+//            }
+//            
+//            ok = try await project.export(to: cacheUrl)
+//            if ok {
+//                print("save the export to \(cacheUrl.path)")
+//            } else {
+//                print("export failed")
+//            }
+            
         }
     }
     
@@ -326,25 +340,6 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
             return
         }
         timeLineVC.setCurrentPlayTime(time)
-    }
-    
-    private func addVideoTrackToComposition(composition: AVMutableComposition, videoURL: URL) async {
-        let asset = AVURLAsset(url: videoURL)
-        guard let videoTrack = try? await asset.loadTracks(withMediaType: .video).first else {
-            return
-        }
-        
-        guard let duration = try? await asset.load(.duration) else {
-            print("load duration error")
-            return
-        }
-        
-        do {
-            let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-            try compositionVideoTrack?.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: videoTrack, at: CMTime.zero)
-        } catch {
-            print("error adding video track to composition: \(error)")
-        }
     }
     
     // MARK: ui utility

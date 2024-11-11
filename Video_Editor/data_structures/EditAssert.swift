@@ -120,6 +120,8 @@ class PhotoEditAsset : VisualEditAsset {
             return false
         }
         
+        print("generate video at url \(targetUrl.path)")
+        
         return true
     }
     
