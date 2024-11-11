@@ -48,6 +48,9 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
     var playerLayer: AVPlayerLayer!
     var timeLineVC: TimeLineViewController!
     
+    // data model
+    var project: EditProject!
+    
     var timeObserverToken: Any?
     
     deinit {

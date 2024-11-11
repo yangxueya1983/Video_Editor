@@ -8,20 +8,6 @@
 import Foundation
 import AVFoundation
 
-class CacheItem {
-    init(rootDir: String) {
-        // TODO: create individual directories
-    }
-
-    func check() -> Bool {
-        return true
-    }
-
-    func addAsset(asset: EditAsset)-> Bool {
-        return true
-    }
-}
-
 class EditProject {
     private let projectID: UUID
 
@@ -33,12 +19,36 @@ class EditProject {
     private var transitions: [VideoTransition] = []
 
     private var id2AssetMap: [UUID: EditAsset] = [:]
+    
+    private var composition: AVMutableComposition?
+    private var videoComposition: AVMutableVideoComposition?
+    private let dir: String
 
-    private var cacheItem: CacheItem
-
-    init(cacheItem: CacheItem) {
+    init(dir: String) {
         projectID = UUID()
-        self.cacheItem = cacheItem
+        self.dir = dir
+        
+        assert(!FileManager.default.fileExists(atPath: dir), "directory already exists")
+        
+        do {
+            try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        } catch {
+            print("failed to create directory with error: \(error.localizedDescription)")
+        }
+    }
+    
+    func getNextAssetDirectory() -> String? {
+        var asset_idx = 0
+        let prefix = "Asset"
+        while true {
+            let fullPath = dir + "/" + prefix + "_\(asset_idx)"
+            if !FileManager.default.fileExists(atPath: fullPath) {
+                return fullPath
+            }
+            asset_idx += 1
+        }
+        
+        return nil
     }
     
     /// create the composition after project update
@@ -65,6 +75,8 @@ class EditProject {
             return nil
         }
         
+        composition = mixComp
+        videoComposition = videoComp
         return (mixComp, videoComp)
     }
 
@@ -126,14 +138,24 @@ class EditProject {
     }
 }
 
-class CacheHelper {
-    static func createNewCacheDirectory() -> CacheItem {
-        return CacheItem(rootDir: "")
+class ProjectManager {
+    static let sharedMgr : ProjectManager = ProjectManager()
+    
+    func getNextProjectDir() -> String? {
+        let userDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        var projIdx = 0
+        while true {
+            let projPath = userDirectory.appendingPathComponent("Projects_\(projIdx)")
+            if !FileManager.default.fileExists(atPath: projPath.path) {
+                return projPath.path
+            }
+            projIdx += 1
+        }
+        
+        return nil
     }
-}
-
-
-class ArchiveManager {
+    
     func loadEditProject() -> [EditProject] {
         let ret: [EditProject] = []
         return ret

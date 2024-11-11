@@ -16,14 +16,12 @@ struct AssetConfig {
 
 class EditAsset {
     let id = UUID()
-    let url: URL
     let cacheDir: String
     var asset: AVAsset?
     var selectTimeRange: CMTimeRange = .zero
     var maxDuration: CMTime = .zero
     
-    init(url: URL, cacheDir: String) {
-        self.url = url
+    init(cacheDir: String) {
         self.cacheDir = cacheDir
         // create the directory, remove it if not exists
         do {
@@ -45,16 +43,6 @@ class EditAsset {
         return ""
     }
     
-    func check() -> Bool {
-        // TODO: not sure if it will work for photo library as well
-        let fileMgr = FileManager.default
-        if fileMgr.fileExists(atPath: url.path) {
-            return true
-        }
-        
-        return false
-    }
-    
     func preprocess() -> Bool {
         return true
     }
@@ -70,6 +58,7 @@ class AudioEditAsset: EditAsset {
 class PhotoEditAsset : VisualEditAsset {
     var thumnail: UIImage?
     var representImage: UIImage?
+    var origImage: UIImage?
     
     // in the cacahe direcotry already
     var representImgPath: String {
@@ -83,8 +72,9 @@ class PhotoEditAsset : VisualEditAsset {
         get { return cacheDir + "/thumbnail.jpg"}
     }
     
-    override init(url: URL, cacheDir: String) {
-        super.init(url: url, cacheDir: cacheDir)
+    init(image: UIImage, cacheDir: String) {
+        super.init(cacheDir: cacheDir)
+        self.origImage = image
     }
     
     override func getCacheAssetPath() -> String {
@@ -92,11 +82,7 @@ class PhotoEditAsset : VisualEditAsset {
     }
     
     override func process() async -> Bool {
-        if url.scheme == "ph" {
-            return await generateFileDataFromPHLib()
-        } else {
-            return await generateFileDataFromLocal()
-        }
+        return await generateFileDataFromLocal()
     }
     
     override func preprocess() -> Bool {
@@ -131,8 +117,8 @@ class PhotoEditAsset : VisualEditAsset {
     }
     
     private func generateFileDataFromLocal() async -> Bool {
-        guard let originalImg = UIImage(contentsOfFile: url.absoluteString) else {
-            print("load image from local failed for path: \(url.absoluteString)")
+        // TODO: what if the original image is not portrait
+        guard let originalImg = origImage else {
             return false
         }
         
@@ -161,66 +147,7 @@ class PhotoEditAsset : VisualEditAsset {
         return await generateVideo(image: self.representImage)
     }
     
-    private func generateFileDataFromPHLib() async -> Bool {
-        // assuming it's a 'ph://' URL
-        let assetID = url.lastPathComponent
-        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
-        
-        guard let obj =  fetchResult.firstObject else {
-            return false
-        }
-        
-        let options: PHImageRequestOptions = .init()
-        options.isSynchronous = false
-        // original data format
-        options.deliveryMode = .highQualityFormat
-        options.resizeMode = .none
-        let originalImage = await withCheckedContinuation { (cont) in
-            PHImageManager.default().requestImage(for: obj, targetSize: PHImageManagerMaximumSize, contentMode: .default, options: options) { (img, _) in
-                if let img {
-                    cont.resume(returning: img)
-                }
-            }
-        }
 
-        options.deliveryMode = .opportunistic
-        options.resizeMode = .fast
-        // preview image
-        let representImage = await withCheckedContinuation { (cont) in
-            PHImageManager.default().requestImage(for: obj, targetSize: .init(width: 1024, height: 1024), contentMode: .aspectFit, options: options) { (img, _) in
-                if let img {
-                    cont.resume(returning: img)
-                }
-            }
-        }
-        
-        // thumnail image
-        let thumnaillImage = await withCheckedContinuation { (cont) in
-            PHImageManager.default().requestImage(for: obj, targetSize: .init(width: 100, height: 100), contentMode: .aspectFit, options: options) { (img, _) in
-                if let img {
-                    cont.resume(returning: img)
-                }
-            }
-        }
-        
-        // hanlding the original image, preview image and thumnail image
-        do {
-            try originalImage.pngData()?.write(to: .init(fileURLWithPath: self.origImgPath))
-            try representImage.pngData()?.write(to: .init(fileURLWithPath: self.representImgPath))
-            try thumnaillImage.pngData()?.write(to: .init(fileURLWithPath: self.thummnailPath))
-        } catch {
-            print("Failed to write image data to disk: \(error)")
-            return false
-        }
-        
-        self.thumnail = thumnaillImage
-        self.representImage = representImage
-        // the original image data is already saved to disk, will load it when used it
-        // don't load it to memory to save data
-        
-        // generate the video from image
-        return await generateVideo(image: self.representImage)
-    }
 }
 
 class VideoEditAsset: VisualEditAsset {

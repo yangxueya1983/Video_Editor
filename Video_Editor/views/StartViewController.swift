@@ -8,6 +8,8 @@
 import UIKit
 import AVFoundation
 import SnapKit
+import Photos
+import PhotosUI
 
 struct ArchiveProject {
     let createDate: Date
@@ -17,7 +19,7 @@ struct ArchiveProject {
     let sizeInMB: Float
 }
 
-class StartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate {
+class StartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, PHPickerViewControllerDelegate, UINavigationControllerDelegate {
     var tableView: UITableView!
     var newProjectBtn: UIButton!
     var headerView: UIView!
@@ -327,7 +329,14 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     // MARK: - event handling
     @objc private func newProjectButtonTapped() {
-        print("new project button pressed")
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 0
+        config.filter = .images
+        
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+        picker.modalPresentationStyle = .fullScreen
+        present(picker, animated: true)
     }
     
     @objc private func projectMoreSettingBtnTapped(_ btn: UIButton) {
@@ -386,6 +395,72 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         for image in images {
             let project = ArchiveProject(createDate: Date(), modifyDate: Date(), duration: CMTime(value: 10, timescale: 1), representImage: image, sizeInMB: 10)
             archiveProjects.append(project)
+        }
+    }
+    
+    // MARK - PHPhotolibrary view controller delegate
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        // load the original images
+        if results.isEmpty {
+            picker.dismiss(animated: true)
+            return
+        }
+        
+        var images: [UIImage?] = Array(repeating: nil, count: results.count)
+        
+        for (idx,result) in results.enumerated() {
+            Task {
+                do {
+                    if let image = try await loadImage(from: result) {
+                        images[idx] = image
+                    }
+                } catch {
+                    print("Error loading image: \(error)")
+                }
+            }
+        }
+        
+        // TODO: create projects from the images
+        guard let projPath = ProjectManager.sharedMgr.getNextProjectDir() else {
+            print("could not get the next project directory")
+            picker.dismiss(animated: true)
+            return
+        }
+        
+        let project = EditProject(dir: projPath)
+        
+        for image in images {
+            guard let image, let assetDir = project.getNextAssetDirectory() else { continue }
+            let photoAsset = PhotoEditAsset(image: image, cacheDir: assetDir)
+            if !project.addVisualAsset(photoAsset) {
+                assert(false)
+            }
+        }
+        
+        picker.dismiss(animated: false) {
+            let editorVC = EditViewController()
+            editorVC.project = project
+            editorVC.modalPresentationStyle = .fullScreen
+            self.present(editorVC, animated: true)
+        }
+    }
+    
+    // Async function to load a single image from PHPickerResult
+    private func loadImage(from result: PHPickerResult) async throws -> UIImage? {
+        try await withCheckedThrowingContinuation { continuation in
+            if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                result.itemProvider.loadObject(ofClass: UIImage.self) { object, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let image = object as? UIImage {
+                        continuation.resume(returning: image)
+                    } else {
+                        continuation.resume(returning: nil)
+                    }
+                }
+            } else {
+                continuation.resume(returning: nil)
+            }
         }
     }
 }
