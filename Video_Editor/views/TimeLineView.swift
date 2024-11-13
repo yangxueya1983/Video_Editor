@@ -97,7 +97,12 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     var curTimeScaleLen: Float = 0
     
     var selectClipPath: IndexPath?
-
+    
+    var project: EditProject? {
+        didSet {
+            collectionView.reloadSections(IndexSet(integer: 0))
+        }
+    }
     // states
     var model: TimeLineDataModel = TimeLineDataModel()
     
@@ -212,8 +217,13 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if section == 0 {
             // the time mark
-            let intervals = Int(ceil(model.videoDuration / curTimeScale))
-            return intervals + 1
+            if let duration = self.project?.videoDuration {
+                let intervals = Int(ceil(Float(duration.seconds) / curTimeScale))
+                return intervals + 1
+            } else {
+                let intervals = Int(ceil(model.videoDuration / curTimeScale))
+                return intervals + 1
+            }
         }
         
         if section == 1 {

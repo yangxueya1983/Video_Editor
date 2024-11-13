@@ -22,6 +22,9 @@ class EditProject {
     
     var composition: AVMutableComposition?
     var videoComposition: AVMutableVideoComposition?
+    
+    var videoDuration: CMTime?
+    // the directory where the project is
     private let dir: String
 
     init(dir: String) {
@@ -66,7 +69,7 @@ class EditProject {
         let videoSize = CGSizeMake(1024, 768)
         let frameRate = CMTime(value: 1, timescale: 60)
         
-        guard let (mixComp, videoComp) = try await TransitionUtility.configureMixComposition(
+        guard let (mixComp, videoComp, duration) = try await TransitionUtility.configureMixComposition(
             videoAssets: assets,
             videoRanges: selectRanges,
             transitions: transitions,
@@ -81,6 +84,7 @@ class EditProject {
         
         composition = mixComp
         videoComposition = videoComp
+        videoDuration = duration
         return true
     }
 

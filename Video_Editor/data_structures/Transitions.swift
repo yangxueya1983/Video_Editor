@@ -55,7 +55,20 @@ struct VideoTransition {
 }
 
 struct TransitionUtility {
-    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], transitions: [TransitionType],audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition)? {
+    
+    /// create the video composition
+    /// - Parameters:
+    ///   - videoAssets: video assets
+    ///   - videoRanges: time ranges for each video asset
+    ///   - transitions: transition types
+    ///   - audioAssets: audio assets
+    ///   - audioRanges: audio select ranges
+    ///   - audioInsertTimes: insert time for each audio asset
+    ///   - transitionDuration: video transition duration, each video duration must be greater than this value
+    ///   - videoSie: genreated video size
+    ///   - frameDuration: frame rates to generate
+    /// - Returns: (composition, video composition, duration)
+    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], transitions: [TransitionType],audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition, CMTime)? {
         
         if videoAssets.count != transitions.count + 1 || videoAssets.count != videoRanges.count || audioAssets.count != audioRanges.count {
             print("input error")
@@ -170,6 +183,9 @@ struct TransitionUtility {
             }
         }
         
+        // curInsertTime is the total duration
+        let totalDuration = curInsertTime
+        
         videoComposition.instructions = generateInstructions(configures: instructionCfgs, totalTime: curInsertTime)
         videoComposition.renderSize = videoSie
         videoComposition.frameDuration = frameDuration
@@ -182,7 +198,7 @@ struct TransitionUtility {
             try mutableTrack.insertTimeRange(timeRange, of: audioTrack!, at: insertTime)
         }
         
-        return (composition, videoComposition)
+        return (composition, videoComposition, totalDuration)
     }
     
     private static func generateInstructions(configures: [(CMTimeRange, [AVAssetTrack], TransitionType)], totalTime: CMTime) -> [AVMutableVideoCompositionInstruction] {

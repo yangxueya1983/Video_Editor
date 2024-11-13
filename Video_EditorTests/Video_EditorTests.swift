@@ -106,7 +106,7 @@ struct Video_EditorTests {
         
         let transitionTypes: [TransitionType] = [transitionType]
         
-        guard let (composition, videoComposition) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 60)) else {
+        guard let (composition, videoComposition, duration) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 60)) else {
             #expect(Bool(false))
             return
         }

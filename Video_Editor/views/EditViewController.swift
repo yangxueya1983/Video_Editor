@@ -268,6 +268,9 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
                         self.playerTimeChagne(time: time)
                     }
                 }
+                
+                // setup the time line view
+                self.timeLineVC.project = self.project
             }
             
             // export to cache dir for testing
