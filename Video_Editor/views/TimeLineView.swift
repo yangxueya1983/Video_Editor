@@ -289,21 +289,26 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
                 // no reuse for this cell
                 let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "timeIndicatorCell", for: indexPath)
                 
-                // add a label
-                let label = UILabel(frame: cell.contentView.bounds)
-                label.textAlignment = .center
-                cell.contentView.addSubview(label)
-                label.snp.makeConstraints { make in
-                    make.top.equalToSuperview()
-                    make.centerX.equalToSuperview()
+                // need to check if the label exists or not, otherwise, each refresh will add one label
+                if cell.contentView.viewWithTag(100) == nil {
+                    // add a label
+                    let label = UILabel(frame: cell.contentView.bounds)
+                    label.textAlignment = .center
+                    cell.contentView.addSubview(label)
+                    label.snp.makeConstraints { make in
+                        make.top.equalToSuperview()
+                        make.centerX.equalToSuperview()
+                    }
+                    
+                    label.text = getCurrentTimeLineTimeStr()
+                    label.textColor = .white
+                    label.tag = 100
+                    
+                    // always at the top
+                    
+                    cell.layer.zPosition = 100
+                    cell.backgroundColor = .blue
                 }
-                
-                label.text = getCurrentTimeLineTimeStr()
-                label.textColor = .white
-                
-                // always at the top
-                cell.layer.zPosition = 100
-                cell.backgroundColor = .blue
                 
                 return cell
             }
@@ -773,7 +778,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         
         // update the time label
         let timeCell = collectionView.cellForItem(at: IndexPath(row: 0, section: 0))
-        if let label = timeCell?.contentView.subviews.first as? UILabel {
+        if let label = timeCell?.contentView.viewWithTag(100) as? UILabel {
             label.text = getCurrentTimeLineTimeStr()
         }
         
