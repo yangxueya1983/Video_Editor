@@ -12,16 +12,16 @@ class EditProject {
     private let projectID: UUID
 
     // include video asset photo asset
-    private var visualAssets : [VisualEditAsset] = []
+    public private(set) var visualAssets : [VisualEditAsset] = []
     // audio assets
-    private var audioAssets: [AudioEditAsset] = []
+    public private(set) var audioAssets: [AudioEditAsset] = []
     // transitions between visual assets
-    private var transitions: [VideoTransition] = []
+    public private(set) var transitions: [VideoTransition] = []
 
     private var id2AssetMap: [UUID: EditAsset] = [:]
     
-    var composition: AVMutableComposition?
-    var videoComposition: AVMutableVideoComposition?
+    public private(set) var composition: AVMutableComposition?
+    public private(set) var videoComposition: AVMutableVideoComposition?
     
     var isReady: Bool {
         return composition != nil && videoComposition != nil

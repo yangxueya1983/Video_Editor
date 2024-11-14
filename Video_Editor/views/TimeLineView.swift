@@ -229,7 +229,11 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         }
         
         if section == 1 {
-            return model.clips.count
+            if let visualAssets = project?.visualAssets {
+                return visualAssets.count
+            }
+            
+            return 0
         }
         
         if section > 1 {
@@ -381,8 +385,13 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             let s = CGSizeMake(CGFloat(width), 50)
             return s
         } else if indexPath.section == 1 {
+            guard let project = self.project else {
+                assert(false)
+                return .zero
+            }
+            
             // video clip views
-            let clip = model.clips[indexPath.row]
+            let clip = project.visualAssets[indexPath.row]
             let width = clip.getLength(timeScale: curTimeScale, timeScaleLen: curTimeScaleLen)
             let s = CGSizeMake(CGFloat(width), 50)
             return s
