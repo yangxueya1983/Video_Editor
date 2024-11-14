@@ -23,6 +23,10 @@ class EditProject {
     var composition: AVMutableComposition?
     var videoComposition: AVMutableVideoComposition?
     
+    var isReady: Bool {
+        return composition != nil && videoComposition != nil
+    }
+    
     var videoDuration: CMTime?
     // the directory where the project is
     private let dir: String

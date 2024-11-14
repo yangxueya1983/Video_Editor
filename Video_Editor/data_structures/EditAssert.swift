@@ -49,6 +49,10 @@ class EditAsset {
 }
 
 class VisualEditAsset: EditAsset {
+    func generateThumnaisls(times: [CMTime]) -> [UIImage?] {
+        let ret = [UIImage]()
+        return ret
+    }
 }
 
 class AudioEditAsset: EditAsset {
@@ -95,6 +99,15 @@ class PhotoEditAsset : VisualEditAsset {
     override func preprocess() -> Bool {
         // TODO: implement for the photo library
         return true
+    }
+    
+    override func generateThumnaisls(times: [CMTime]) -> [UIImage?] {
+        var ret = [UIImage?]()
+        for _ in times {
+            ret.append(thumnail)
+        }
+        
+        return ret
     }
     
     private func generateVideo(image: UIImage?) async -> Bool {

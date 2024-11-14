@@ -98,11 +98,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     
     var selectClipPath: IndexPath?
     
-    var project: EditProject? {
-        didSet {
-            collectionView.reloadSections(IndexSet(integer: 0))
-        }
-    }
+    var project: EditProject?
     // states
     var model: TimeLineDataModel = TimeLineDataModel()
     
@@ -149,6 +145,12 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         view.addSubview(collectionView)
     }
     
+    // MARK: public interface
+    func refreshData() {
+        collectionView.reloadData()
+    }
+    
+    // MARK: collection view delegate
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         // only handle section >= 1 scenario
         if indexPath.section < 1 {
@@ -762,9 +764,9 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             }
         }
         
-        if !isDragging {
-            print(scrollView.contentOffset.x)
-        }
+//        if !isDragging {
+//            print(scrollView.contentOffset.x)
+//        }
         
         // need to relayout the collection view
         collectionView.collectionViewLayout.invalidateLayout()
@@ -807,6 +809,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         let minutes = Int(time.seconds / 60)
         let seconds = Int(time.seconds.truncatingRemainder(dividingBy: 60))
         let timeStr = String(format: "%02d:%02d", minutes, seconds)
+        print(timeStr)
         return timeStr
     }
 }

@@ -76,7 +76,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             make.bottom.equalTo(self.view.safeAreaLayoutGuide.snp.bottom)
         }
 
-        prepareTestData()
+//        prepareTestData()
         // fixed row height
         tableView.rowHeight = 100
         tableView.reloadData()

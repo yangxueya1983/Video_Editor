@@ -202,6 +202,7 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
         
         // add TimeLine View from TimeLineVC
         timeLineVC = TimeLineViewController()
+        timeLineVC.project = project
         bottomView.addSubview(timeLineVC.view)
         
         timeLineVC.view.snp.makeConstraints { make in
@@ -269,8 +270,7 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
                     }
                 }
                 
-                // setup the time line view
-                self.timeLineVC.project = self.project
+                self.timeLineVC.refreshData()
             }
             
             // export to cache dir for testing
