@@ -265,6 +265,18 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
                     }
                 }
                 
+                UserDefaults.standard.set(true, forKey: "AVVideoCompositionRenderPipelineLoggingEnabled")
+                UserDefaults.standard.set(true, forKey: "AVVideoCompositionRenderPipelineVisualizeDirtyRegions")
+                NotificationCenter.default.addObserver(
+                    forName: .AVPlayerItemFailedToPlayToEndTime,
+                    object: self.player.currentItem,
+                    queue: .main
+                ) { notification in
+                    if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
+                        print("Playback failed: \(error.localizedDescription)")
+                    }
+                }
+                
                 self.timeLineVC.refreshData()
             }
             
@@ -276,8 +288,8 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
 //                _ = try? FileManager.default.removeItem(at: cacheUrl)
 //            }
 //            
-//            ok = try await project.export(to: cacheUrl)
-//            if ok {
+//            let ok1 = try await project.export(to: cacheUrl)
+//            if ok1 {
 //                print("save the export to \(cacheUrl.path)")
 //            } else {
 //                print("export failed")
