@@ -234,16 +234,11 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
             make.top.equalTo(headerView.snp.bottom)
             make.bottom.equalTo(bottomView.snp.top)
         }
-        
-        let composition = AVMutableComposition()
-        guard let videoUrl = Bundle.main.url(forResource: "sample-20s", withExtension: "mp4") else {
-            print("load video track failed")
-            return
-        }
+
         Task {
             // first make each edit asset
             let start = Date()
-            var ok = try await project.createCompositionAsset()
+            let ok = try await project.createCompositionAsset()
             let end = Date()
             print("create composition asset time: \(end.timeIntervalSince(start))")
             

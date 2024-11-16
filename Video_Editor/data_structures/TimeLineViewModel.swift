@@ -12,12 +12,8 @@ struct ClipConfig {
     static let minDuration: CGFloat = 1
 }
 
-struct TimeLineDataModel {
-    let videoDuration: Float = 20
-    
-    var clips: [Clip] = []
-    
-    var audioClips: [[AudioClip]] = []
+struct TimeLineViewModel {
+    var videoDuration: Float = 10
     
     let oneScaleMinLen: Float = 20
     let oneScaleMaxLen: Float = 40

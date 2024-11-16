@@ -10,70 +10,6 @@ import UIKit
 import SwiftUI
 import AVFoundation
 
-struct TimeLineView : UIViewControllerRepresentable {
-    //let vc = TimeLineViewController()
-    let vc: TimeLineViewController = {
-        var dm = TimeLineDataModel()
-        // configure the data model
-        configureDataModel(dm: &dm)
-        
-        var ret = TimeLineViewController()
-        ret.model = dm
-        return ret
-    } ()
-    
-    func makeUIViewController(context: Context) -> some UIViewController {
-        return vc
-    }
-    
-    func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {
-        
-    }
-    
-    private static func configureDataModel(dm: inout TimeLineDataModel)
-    {
-        configureVideoClips(dm: &dm)
-        configureAudioClips(dm: &dm)
-    }
-    
-    private static func configureVideoClips(dm: inout  TimeLineDataModel)
-    {
-        let duration1 = CMTime(value: 10, timescale: 1)
-        let selectRange1 = CMTimeRange(start: CMTime(value: 1, timescale: 1), end: CMTime(value: 3, timescale: 1))
-        let clip1 = Clip(duration: duration1, selectRange: selectRange1)
-        
-        let duration2 = CMTime(value: 12, timescale: 1)
-        let selectRange2 = CMTimeRange(start: CMTime(value: 3, timescale: 1), end: CMTime(value: 10, timescale: 1))
-        let clip2 = Clip(duration: duration2, selectRange: selectRange2)
-        
-        let duration3 = CMTime(value: 14, timescale: 1)
-        let selectRange3 = CMTimeRange(start: CMTime(value: 4, timescale: 1), end: CMTime(value: 10, timescale: 1))
-        let clip3 = Clip(duration: duration3, selectRange: selectRange3)
-
-        dm.clips = [clip1, clip2, clip3]
-    }
-    
-    private static func configureAudioClips(dm: inout TimeLineDataModel)
-    {
-        let duration1 = CMTime(value: 5, timescale: 1)
-        let selectRange1 =  CMTimeRange(start: .zero, duration: duration1)
-        let placeTime1 = CMTime(value: 2, timescale: 1)
-        let clip1 = AudioClip(duration: duration1, selectRange: selectRange1, placeTime: placeTime1)
-        
-        let duration2 = CMTime(value: 6, timescale: 1)
-        let selectRange2 = CMTimeRange(start: CMTime(value:2, timescale: 1), end: CMTime(value:4, timescale: 1))
-        let placeTime2 = CMTime(value: 5, timescale: 1)
-        let clip2 = AudioClip(duration: duration2, selectRange: selectRange2, placeTime: placeTime2)
-        
-        let duration3 = CMTime(value: 5, timescale: 1)
-        let selectRange3 = CMTimeRange(start: CMTime(value: 3, timescale: 1), end: CMTime(value: 4, timescale: 1))
-        let placeTime3 = CMTime(value: 8, timescale: 1)
-        let clip3 = AudioClip(duration: duration3, selectRange: selectRange3, placeTime: placeTime3)
-        
-        dm.audioClips = [[clip1], [clip2, clip3]]
-    }
-}
-
 protocol TimeLineControllerProtocol {
     // user interactive the time line view
     func timeLineUserInteractiveTriggered()
@@ -100,7 +36,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     
     var project: EditProject?
     // states
-    var model: TimeLineDataModel = TimeLineDataModel()
+    var viewModel: TimeLineViewModel = TimeLineViewModel()
     
     // for gestures
     // for drag gesture
@@ -137,10 +73,10 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPressedGesture(_:)))
         collectionView.addGestureRecognizer(longPressGesture)
         
-        let (_, maxLen) = model.getMaxMinLengthForTimeScale(scale: 1.0)
+        let (_, maxLen) = viewModel.getMaxMinLengthForTimeScale(scale: 1.0)
         curLen = maxLen
         curTimeScale = 1.0 // default is 1.0 second
-        curTimeScaleLen = model.getSingleScaleLengthForTimeScale(len: curLen)
+        curTimeScaleLen = viewModel.getSingleScaleLengthForTimeScale(len: curLen)
         
         view.addSubview(collectionView)
     }
@@ -212,8 +148,8 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     }
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        let audioSectionCnt = model.audioClips.count
-        return 2 + audioSectionCnt
+//        let audioSectionCnt = viewModel.audioClips.count
+        return 2
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -223,7 +159,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
                 let intervals = Int(ceil(Float(duration.seconds) / curTimeScale))
                 return intervals + 1
             } else {
-                let intervals = Int(ceil(model.videoDuration / curTimeScale))
+                let intervals = Int(ceil(viewModel.videoDuration / curTimeScale))
                 return intervals + 1
             }
         }
@@ -238,13 +174,14 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         
         if section > 1 {
             // audio items
-            let rows = model.audioClips[section-2]
-            
-            if section == 2 && rows.count == 2 {
-                print("stop here")
-            }
-            
-            return rows.count
+            return 0
+//            let rows = viewModel.audioClips[section-2]
+//            
+//            if section == 2 && rows.count == 2 {
+//                print("stop here")
+//            }
+//            
+//            return rows.count
         }
         
         // this should not happen
@@ -344,18 +281,18 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, moveItemAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-        if sourceIndexPath.section == 1 && destinationIndexPath.section == 1 {
-            // video clip
-            let idx1 = sourceIndexPath.row
-            let idx2 = destinationIndexPath.row
-            model.clips.swapAt(idx1, idx2)
-        }
-        
-        if sourceIndexPath.section > 1 && destinationIndexPath.section > 1 {
-            // audio clip
-            print("debug here")
-            
-        }
+//        if sourceIndexPath.section == 1 && destinationIndexPath.section == 1 {
+//            // video clip
+//            let idx1 = sourceIndexPath.row
+//            let idx2 = destinationIndexPath.row
+//            viewModel.clips.swapAt(idx1, idx2)
+//        }
+//        
+//        if sourceIndexPath.section > 1 && destinationIndexPath.section > 1 {
+//            // audio clip
+//            print("debug here")
+//            
+//        }
     }
     
     //MARK: control
@@ -397,23 +334,26 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             return s
         } else {
             // audo clip views
-            let audioClip = model.audioClips[indexPath.section - 2][indexPath.row]
-            let width = audioClip.getLength(timeScale: curTimeScale, timeScaleLen: curTimeScaleLen)
-            let s = CGSizeMake(CGFloat(width), 50)
-            return s
+//            let audioClip = viewModel.audioClips[indexPath.section - 2][indexPath.row]
+//            let width = audioClip.getLength(timeScale: curTimeScale, timeScaleLen: curTimeScaleLen)
+//            let s = CGSizeMake(CGFloat(width), 50)
+//            return s
+            return .zero
         }
     }
     
     func getAudioItemPlaceInfo(indexPath: IndexPath) -> (CGFloat, CGSize) {
-        guard indexPath.section > 1 else {
-            assert(false)
-        }
+//        guard indexPath.section > 1 else {
+//            assert(false)
+//        }
+//        
+//        let size = collectionView(collectionView, layout: collectionView.collectionViewLayout, sizeForItemAt: indexPath)
+//        let clip = viewModel.audioClips[indexPath.section - 2][indexPath.row]
+//        let x = clip.getPlaceX(timeScale: CGFloat(curTimeScale), timeScaleLen: CGFloat(curTimeScaleLen))
+//        
+//        return (x, size)
         
-        let size = collectionView(collectionView, layout: collectionView.collectionViewLayout, sizeForItemAt: indexPath)
-        let clip = model.audioClips[indexPath.section - 2][indexPath.row]
-        let x = clip.getPlaceX(timeScale: CGFloat(curTimeScale), timeScaleLen: CGFloat(curTimeScaleLen))
-        
-        return (x, size)
+        return (0, .zero)
     }
     
     func getDragInformation(isLeftDrag: inout Bool, leftOffset: inout CGFloat, rightOffset: inout CGFloat, selectIndexPath: inout IndexPath) -> Bool {
@@ -421,42 +361,42 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             return false
         }
         
-        if proposedLeftTimeOffset == nil && proposedRightTimeOffset == nil {
-            // no drag yet
-            return false
-        }
-        
-        assert((proposedLeftTimeOffset != nil && proposedRightTimeOffset == nil) || (proposedLeftTimeOffset == nil && proposedRightTimeOffset != nil))
-        
-        // adjust the offset
-        isLeftDrag = isDragLeft!
-        var left = proposedLeftTimeOffset
-        var right = proposedRightTimeOffset
-        var clip: Clip? = nil
-        
-        if selectClipPath.section == 1 {
-            clip = model.clips[selectClipPath.row]
-        } else {
-            // section clips
-            let secClips = model.audioClips[selectClipPath.section-2]
-            secClips[selectClipPath.row].noOverlapAdjust(clips: secClips, leftTimeOffset: &left, rightTimeOffset: &right)
-            clip = secClips[selectClipPath.row]
-        }
-        
-        guard let clip else {
-            assert(false, "no valid clip found for drag")
-        }
-        
-        clip.adjustTimeOffset(leftTimeOffset: &left, rightTimeOffset: &right)
-        if let left {
-            leftOffset = left / CGFloat(curTimeScale) * CGFloat(curTimeScaleLen)
-        }
-        
-        if let right {
-            rightOffset = right / CGFloat(curTimeScale) * CGFloat(curTimeScaleLen)
-        }
-        
-        selectIndexPath = selectClipPath
+//        if proposedLeftTimeOffset == nil && proposedRightTimeOffset == nil {
+//            // no drag yet
+//            return false
+//        }
+//        
+//        assert((proposedLeftTimeOffset != nil && proposedRightTimeOffset == nil) || (proposedLeftTimeOffset == nil && proposedRightTimeOffset != nil))
+//        
+//        // adjust the offset
+//        isLeftDrag = isDragLeft!
+//        var left = proposedLeftTimeOffset
+//        var right = proposedRightTimeOffset
+//        var clip: Clip? = nil
+//        
+//        if selectClipPath.section == 1 {
+//            clip = viewModel.clips[selectClipPath.row]
+//        } else {
+//            // section clips
+//            let secClips = viewModel.audioClips[selectClipPath.section-2]
+//            secClips[selectClipPath.row].noOverlapAdjust(clips: secClips, leftTimeOffset: &left, rightTimeOffset: &right)
+//            clip = secClips[selectClipPath.row]
+//        }
+//        
+//        guard let clip else {
+//            assert(false, "no valid clip found for drag")
+//        }
+//        
+//        clip.adjustTimeOffset(leftTimeOffset: &left, rightTimeOffset: &right)
+//        if let left {
+//            leftOffset = left / CGFloat(curTimeScale) * CGFloat(curTimeScaleLen)
+//        }
+//        
+//        if let right {
+//            rightOffset = right / CGFloat(curTimeScale) * CGFloat(curTimeScaleLen)
+//        }
+//        
+//        selectIndexPath = selectClipPath
         return true
     }
 
@@ -491,13 +431,13 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         if gesture.state == .changed {
             let scale = Float(gesture.scale)
             var newLen = curLen * scale
-            newLen = min(model.maxLen, newLen)
-            newLen = max(model.minLen, newLen)
+            newLen = min(viewModel.maxLen, newLen)
+            newLen = max(viewModel.minLen, newLen)
             
             if curLen != newLen {
                 curLen = newLen
-                curTimeScale = model.getScaleForLength(len: curLen)
-                curTimeScaleLen = model.getSingleScaleLengthForTimeScale(len: curLen)
+                curTimeScale = viewModel.getScaleForLength(len: curLen)
+                curTimeScaleLen = viewModel.getSingleScaleLengthForTimeScale(len: curLen)
                 collectionView.reloadData()
                 collectionView.collectionViewLayout.invalidateLayout()
             }
@@ -565,13 +505,13 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         
         if selectClipPath.section == 1 {
             // video clip
-            let clip = model.clips[selectClipPath.row]
-            clip.commitOffset(leftOffsetTime: proposedLeftTimeOffset, rightOffsetTime: proposedRightTimeOffset, isDragLeft: isDragLeft!)
+//            let clip = viewModel.clips[selectClipPath.row]
+//            clip.commitOffset(leftOffsetTime: proposedLeftTimeOffset, rightOffsetTime: proposedRightTimeOffset, isDragLeft: isDragLeft!)
         } else {
             // audio clip
-            let secClips = model.audioClips[selectClipPath.section - 2]
-            let audioClip = secClips[selectClipPath.row]
-            audioClip.commitOffset(leftOffsetTime: proposedLeftTimeOffset, rightOffsetTime: proposedRightTimeOffset, isDragLeft: isDragLeft!, sectionClips: secClips)
+//            let secClips = viewModel.audioClips[selectClipPath.section - 2]
+//            let audioClip = secClips[selectClipPath.row]
+//            audioClip.commitOffset(leftOffsetTime: proposedLeftTimeOffset, rightOffsetTime: proposedRightTimeOffset, isDragLeft: isDragLeft!, sectionClips: secClips)
         }
         collectionView.collectionViewLayout.invalidateLayout()
         
@@ -744,15 +684,15 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         let newX = selectFrame.origin.x - layout.timeLineXOffset
         let (origX, _) = getAudioItemPlaceInfo(indexPath: longPressIndexPath)
         let timeOffset = (newX - origX) / CGFloat(curTimeScaleLen) * CGFloat(curTimeScale)
-        let audioClip = model.audioClips[longPressIndexPath.section-2][longPressIndexPath.row]
-        let newPlaceTime = audioClip.placeTime.seconds + timeOffset
+//        let audioClip = viewModel.audioClips[longPressIndexPath.section-2][longPressIndexPath.row]
+//        let newPlaceTime = audioClip.placeTime.seconds + timeOffset
         // TODO: replace hard code number
-        audioClip.placeTime = CMTime(seconds: newPlaceTime, preferredTimescale: 10000)
+//        audioClip.placeTime = CMTime(seconds: newPlaceTime, preferredTimescale: 10000)
         
         if targetSec != longPressIndexPath.section {
             // need to update the data model
-            model.audioClips[longPressIndexPath.section-2].removeAll(where: { $0 === audioClip })
-            model.audioClips[targetSec-2].append(audioClip)
+//            viewModel.audioClips[longPressIndexPath.section-2].removeAll(where: { $0 === audioClip })
+//            viewModel.audioClips[targetSec-2].append(audioClip)
             // needs to refresh data source so collectionview.numberOfSection .. can be correct
             collectionView.reloadData()
         }
