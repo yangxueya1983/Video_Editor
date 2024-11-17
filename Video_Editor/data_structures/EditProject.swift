@@ -130,7 +130,7 @@ class EditProject {
     func addVisualAsset(_ asset: VisualEditAsset) -> Bool {
         visualAssets.append(asset)
         if visualAssets.count > 1 {
-            transitions.append(.init(type: .None))
+            transitions.append(.init(type: .Dissolve))
         }
         
         return check()

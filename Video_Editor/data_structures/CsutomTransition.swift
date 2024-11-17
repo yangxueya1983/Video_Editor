@@ -18,10 +18,17 @@ class CustomVideoCompositionInstructionBase : AVMutableVideoCompositionInstructi
     }
 }
 
+// set the instruction base
+class InstructionStore {
+    static var shared: InstructionStore = .init()
+    var instructions: [AVMutableVideoCompositionInstruction] = []
+}
+
 class CustomVideoCompositor: NSObject, AVVideoCompositing {
     private let renderContextQueue = DispatchQueue(label: "com.example.CustomVideoCompositor.renderContextQueue")
     private let renderingQueue = DispatchQueue(label: "com.example.CustomVideoCompositor.renderingQueue")
     private var renderContext: AVVideoCompositionRenderContext?
+    private var timeRange2Instruction: [CMTimeRange : AVMutableVideoCompositionInstruction] = [:]
     
     // Specify the required pixel buffer attributes
     var sourcePixelBufferAttributes: [String : Any]? {
@@ -45,6 +52,16 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
     
     // Main rendering method
     func startRequest(_ asyncVideoCompositionRequest: AVAsynchronousVideoCompositionRequest) {
+        if timeRange2Instruction.isEmpty {
+            // populate it
+            let instrs = InstructionStore.shared.instructions
+            assert(instrs.count > 0)
+            for inst in instrs {
+                let range = inst.timeRange
+                timeRange2Instruction[range] = inst
+            }
+        }
+        
         renderingQueue.async {
             guard let renderContext = self.renderContext else {
                 asyncVideoCompositionRequest.finish(with: NSError(domain: "CustomVideoCompositor", code: 0, userInfo: nil))
@@ -81,10 +98,15 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
             let ciForeground = CIImage(cvPixelBuffer: foregroundFrame)
             let ciBackground = CIImage(cvPixelBuffer: backgroundFrame)
             
-            guard let instruction = asyncVideoCompositionRequest.videoCompositionInstruction as? CustomVideoCompositionInstructionBase else {
+            guard let origInstruction = self.timeRange2Instruction[instrTimeRange], let instruction = origInstruction as? CustomVideoCompositionInstructionBase else {
                 asyncVideoCompositionRequest.finish(with: NSError(domain: "instruction is not CustomVideoCompositionInstructionBase", code: 0))
                 return
             }
+            
+//            guard let instruction = asyncVideoCompositionRequest.videoCompositionInstruction as? CustomVideoCompositionInstructionBase else {
+//                asyncVideoCompositionRequest.finish(with: NSError(domain: "instruction is not CustomVideoCompositionInstructionBase", code: 0))
+//                return
+//            }
             
             let blendedImage = instruction.compose(ciForeground, ciBackground, transitionFactor, videoSize)
             

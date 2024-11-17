@@ -246,6 +246,14 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
                 print("create composition asset failed")
                 return
             }
+            
+            // set the instructin store so the custom video composition can fetch the data
+            var instructions = [AVMutableVideoCompositionInstruction]()
+            for inst in project.videoComposition!.instructions {
+                instructions.append(inst as! AVMutableVideoCompositionInstruction)
+            }
+            
+            InstructionStore.shared.instructions = instructions
 
             DispatchQueue.main.async {
                 let playerItem = AVPlayerItem(asset: self.project.composition!)
