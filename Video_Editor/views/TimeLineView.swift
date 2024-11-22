@@ -258,9 +258,50 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         } else if indexPath.section == 1 {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "videoClipCell", for: indexPath)
             cell.backgroundColor = .red
+                        
+            if cell.contentView.viewWithTag(100) == nil {
+                // add image container view
+                let containerView = UIView(frame: cell.contentView.bounds)
+                containerView.clipsToBounds = true
+                containerView.tag = 100;
+                cell.contentView.addSubview(containerView)
+                containerView.snp.makeConstraints { make in
+                    make.edges.equalToSuperview()
+                }
+            }
+            
+            let containerView = cell.contentView.viewWithTag(100)!
+            // stack view use tag 101
+            if let subView = containerView.viewWithTag(101) {
+                subView.removeFromSuperview()
+            }
             
             cell.layer.borderWidth = 1
             cell.layer.borderColor = .init(red: 0, green: 1, blue: 0, alpha: 1)
+            if let editAsset = self.project?.visualAssets[indexPath.row] {
+                let size = self.collectionView(collectionView, layout: collectionView.collectionViewLayout, sizeForItemAt: indexPath)
+                let imageCnt = Int(ceil(size.width / size.height))
+                let images = editAsset.getThumnaisls(cnt: imageCnt)
+                
+                var imageViews = [UIImageView]()
+                for image in images {
+                    let imageView = UIImageView(image: image)
+                    imageView.contentMode = .scaleAspectFill
+                    imageViews.append(imageView)
+                }
+                
+                let stackView = UIStackView(arrangedSubviews: imageViews)
+                stackView.tag = 101
+                stackView.alignment = .center
+                stackView.axis = .horizontal
+                stackView.distribution = .fillEqually
+                stackView.spacing = 0
+                containerView.addSubview(stackView)
+                
+                stackView.snp.makeConstraints { make in
+                    make.edges.equalToSuperview()
+                }
+            }
             
             return cell
         } else {

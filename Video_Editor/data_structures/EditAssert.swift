@@ -54,7 +54,8 @@ class EditAsset {
 }
 
 class VisualEditAsset: EditAsset {
-    func generateThumnaisls(times: [CMTime]) -> [UIImage?] {
+    func getThumnaisls(cnt: Int) -> [UIImage?] {
+        assert(false , "subclass should override this method")
         let ret = [UIImage]()
         return ret
     }
@@ -106,9 +107,9 @@ class PhotoEditAsset : VisualEditAsset {
         return true
     }
     
-    override func generateThumnaisls(times: [CMTime]) -> [UIImage?] {
+    override func getThumnaisls(cnt: Int) -> [UIImage?] {
         var ret = [UIImage?]()
-        for _ in times {
+        for _ in 0..<cnt {
             ret.append(thumnail)
         }
         
