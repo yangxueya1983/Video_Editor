@@ -57,12 +57,11 @@ class TimeLineLayout : UICollectionViewLayout {
         var audioY : CGFloat = 75 + 50 + 10
         
         for sec in 0..<secNum {
+            let itemCnt = collectionView.numberOfItems(inSection: sec)
             if sec == 0 {
                 // section 0 layout
                 // suppose the size should be the same for all index paths
                 let size = delegate.collectionView(collectionView, layout: self, sizeForItemAt: IndexPath(item: 1, section: 0))
-                let itemCnt = collectionView.numberOfItems(inSection: 0)
-                
                 // item 0 is special cell for displaying the current time / total time
                 var offset: CGFloat = timeLineXOffset
                 for itmIdx in 1..<itemCnt {
@@ -220,7 +219,20 @@ class TimeLineLayout : UICollectionViewLayout {
                 }
             }
             
-            if sec > 1 {
+            if sec == 2 {
+                for idx in 0..<itemCnt {
+                    let indexPath = IndexPath(row: idx, section: 2)
+                    let videoAssetFrame = currentAttributes[IndexPath(row: idx, section: 1)]!.frame
+                    let size = delegate.collectionView(collectionView, layout: self, sizeForItemAt: indexPath)
+                    
+                    let attributes = UICollectionViewLayoutAttributes(forCellWith: indexPath)
+                    let frame = CGRectMake(videoAssetFrame.maxX - size.width/2, videoAssetFrame.minY, size.width, size.height)
+                    attributes.frame = frame
+                    currentAttributes[indexPath] = attributes
+                }
+            }
+            
+            if sec > 2 {
                 let frames = getAudioFrames(section: sec, xOffset: xOffset, yOffset: audioY)
                 for (idx, frame) in frames.enumerated() {
                     let indexPath = IndexPath(row: idx, section: sec)
@@ -230,7 +242,6 @@ class TimeLineLayout : UICollectionViewLayout {
                 }
                 audioY += 50 + 10 // item height + gap
             }
-            
         }
         
         contentSize = CGSizeMake(maxWidth, maxHeight)
