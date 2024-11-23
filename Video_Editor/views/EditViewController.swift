@@ -8,6 +8,7 @@
 import SwiftUI
 import AVFoundation
 import SnapKit
+import NVActivityIndicatorView
 
 
 public struct EditViewWrapper: View {
@@ -47,6 +48,7 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
     var player: AVPlayer!
     var playerLayer: AVPlayerLayer!
     var timeLineVC: TimeLineViewController!
+    var indicatorView: NVActivityIndicatorView!
     
     // data model
     var project: EditProject!
@@ -62,11 +64,20 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        indicatorView = NVActivityIndicatorView(frame: CGRectMake(0, 0, 100, 100), type: .circleStrokeSpin)
+        self.view.addSubview(indicatorView)
+        indicatorView.snp.makeConstraints { make in
+            make.height.width.equalTo(50)
+            make.center.equalTo(self.view)
+        }
+        indicatorView.startAnimating()
+        
         configureTopHeaderView()
         configureBottomView()
         configurePlayerView()
         configureVideoConfigureView()
         
+        self.view.bringSubviewToFront(indicatorView)
         self.view.backgroundColor = .init(hex: "#141414")
     }
     
@@ -286,6 +297,7 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
                 }
                 
                 self.timeLineVC.refreshData()
+                self.indicatorView.stopAnimating()
             }
             
             // export to cache dir for testing
