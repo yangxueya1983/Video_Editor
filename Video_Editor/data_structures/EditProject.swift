@@ -89,6 +89,8 @@ class EditProject {
         composition = mixComp
         videoComposition = videoComp
         videoDuration = duration
+        
+        print("create the composition asset with total duration \(duration.seconds)")
         return true
     }
 

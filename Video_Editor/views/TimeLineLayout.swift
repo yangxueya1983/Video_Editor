@@ -202,14 +202,15 @@ class TimeLineLayout : UICollectionViewLayout {
                             maxHeight = max(maxHeight, yOffset + frame.size.height)
                         }
                     } else {
-                        var x: CGFloat = 0
+                        // it starts at the center of collection view
+                        var x: CGFloat = collectionView.frame.width/2
                         // no drag information
                         for itemIdx in 0..<itemCnt {
                             let indexPath = IndexPath(row:itemIdx, section: 1)
                             let attributes = UICollectionViewLayoutAttributes(forCellWith: indexPath)
                             
                             let size = delegate.collectionView(collectionView, layout: self, sizeForItemAt: indexPath)
-                            attributes.frame = CGRectMake(x + xOffset, yOffset, size.width, size.height)
+                            attributes.frame = CGRectMake(x, yOffset, size.width, size.height)
                             currentAttributes[indexPath] = attributes
                             x += size.width
                             maxWidth = max(maxWidth, x)

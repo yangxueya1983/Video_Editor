@@ -46,11 +46,11 @@ class EditAsset {
     func preprocess() -> Bool {
         return true
     }
-    
-    func getLength(timeScale: Float, timeScaleLen: Float) -> CGFloat {
-        let seconds = selectTimeRange.duration.seconds
-        return seconds / CGFloat(timeScale) * CGFloat(timeScaleLen)
-    }
+//    
+//    func getLength(timeScale: Float, timeScaleLen: Float) -> CGFloat {
+//        let seconds = selectTimeRange.duration.seconds
+//        return seconds / CGFloat(timeScale) * CGFloat(timeScaleLen)
+//    }
 }
 
 class VisualEditAsset: EditAsset {

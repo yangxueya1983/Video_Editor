@@ -91,4 +91,8 @@ struct PhotoMediaUtility {
         
         return scaledImage
     }
+
+    static func getTimeLength(duration: Float, timeScale: Float, timeScaleLen: Float) -> Float {
+        return duration / timeScale * timeScaleLen
+    }
 }

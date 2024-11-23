@@ -165,10 +165,10 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         }
         
         if section == 1 {
-            if let visualAssets = project?.visualAssets {
-                return visualAssets.count
+            if let project = self.project, project.isReady {
+                return project.visualAssets.count
             }
-            
+
             return 0
         }
         
@@ -349,6 +349,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         // make sure the time is always >= 0 by set offset >= 0
         let offset = max(collectionView.contentOffset.x, 0)
         let time = (Float(offset) / curTimeScaleLen) * curTimeScale
+        print("current time is \(time)")
         return CMTime(seconds: Double(time), preferredTimescale: CMTimeScale(NSEC_PER_SEC))
     }
     
@@ -370,7 +371,19 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             
             // video clip views
             let clip = project.visualAssets[indexPath.row]
-            let width = clip.getLength(timeScale: curTimeScale, timeScaleLen: curTimeScaleLen)
+            
+            var width = PhotoMediaUtility.getTimeLength(duration: Float(clip.selectTimeRange.duration.seconds), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
+            
+            let transWidth = PhotoMediaUtility.getTimeLength(duration: Float(EditorSetting.transitionTime), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
+            
+            if indexPath.row  == 0 || indexPath.row == project.visualAssets.count - 1 {
+                // remove one side transition time
+                width -= transWidth
+            } else {
+                // remove both side transition time
+                width -= transWidth * 2
+            }
+            
             let s = CGSizeMake(CGFloat(width), 50)
             return s
         } else {
@@ -804,7 +817,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         let minutes = Int(time.seconds / 60)
         let seconds = Int(time.seconds.truncatingRemainder(dividingBy: 60))
         let timeStr = String(format: "%02d:%02d", minutes, seconds)
-        print(timeStr)
+//        print(timeStr)
         return timeStr
     }
 }
