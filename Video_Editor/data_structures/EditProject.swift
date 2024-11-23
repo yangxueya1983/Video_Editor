@@ -8,6 +8,24 @@
 import Foundation
 import AVFoundation
 
+class ExportConfig {
+    enum ExportResolution {
+        case R480, R720, R1080, R2K, R4K
+    }
+    
+    enum FrameRate {
+        case FR24, FR25, FR30, FR50, FR60
+    }
+    
+    enum BitRate {
+        case Low, Recommended, High
+    }
+    
+    var resolution: ExportResolution = .R1080
+    var frameRate: FrameRate = .FR60
+    var bitRate: BitRate = .Recommended
+}
+
 class EditProject {
     private let projectID: UUID
 
@@ -90,6 +108,13 @@ class EditProject {
         videoComposition = videoComp
         videoDuration = duration
         
+        // need to reset the instructions so the player can use instructions to do the transitions
+        var instructions = [AVMutableVideoCompositionInstruction]()
+        for inst in videoComposition!.instructions {
+            instructions.append(inst as! AVMutableVideoCompositionInstruction)
+        }
+        InstructionStore.shared.instructions = instructions
+        
         print("create the composition asset with total duration \(duration.seconds)")
         return true
     }
@@ -139,7 +164,7 @@ class EditProject {
         return true
     }
     
-    func export(to url: URL) async throws -> Bool {
+    func export(to url: URL, config: ExportConfig = .init(), progress: ((Double) -> Void)? = nil) async throws -> Bool {
         guard let asset = composition else {
             print("Error: asset is not ready")
             return false
@@ -162,6 +187,11 @@ class EditProject {
             print("export error : \(exportSession.error?.localizedDescription ?? "")")
             return false
         }
+    }
+    
+    private func getCompositionAndVideoComposition(expConfig: ExportConfig) async throws -> (AVComposition, AVVideoComposition)? {
+        
+        return nil
     }
     
     private func prepareAssets() async throws-> Bool {
