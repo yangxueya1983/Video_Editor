@@ -519,6 +519,19 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
         }
     }
     
+    func startShowIndicator() {
+        self.indicatorView.startAnimating()
+    }
+
+    func stopShowIndicator() {
+        self.indicatorView.stopAnimating()
+    }
+    
+    func projectUpdated() {
+        let playerItem = AVPlayerItem(asset: self.project.composition!)
+        playerItem.videoComposition = self.project.videoComposition
+        self.player.replaceCurrentItem(with: playerItem)
+    }
 }
 
 

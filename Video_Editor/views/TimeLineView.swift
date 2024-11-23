@@ -16,6 +16,9 @@ protocol TimeLineControllerProtocol {
     func timeLineVideoIsPlaying() -> Bool
     func timeLineUserTriggeredTimeChange()
     func timeLineEndDragingWillScrollToTime(_ time: CMTime)
+    func startShowIndicator()
+    func stopShowIndicator()
+    func projectUpdated()
 }
 
 class TimeLineViewController : UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, TimeLineLayoutProtocol {
@@ -342,12 +345,29 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, moveItemAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-//        if sourceIndexPath.section == 1 && destinationIndexPath.section == 1 {
-//            // video clip
-//            let idx1 = sourceIndexPath.row
-//            let idx2 = destinationIndexPath.row
-//            viewModel.clips.swapAt(idx1, idx2)
-//        }
+        if sourceIndexPath.section == 1 && destinationIndexPath.section == 1 {
+            // video clip
+            let idx1 = sourceIndexPath.row
+            let idx2 = destinationIndexPath.row
+        
+            self.delegate?.startShowIndicator()
+            Task {
+                do {
+                    if let succeed = try await self.project?.swapAsset(idx1, idx2), succeed {
+                        await MainActor.run {
+                            self.delegate?.stopShowIndicator()
+                            self.delegate?.projectUpdated()
+                        }
+                    } else {
+                        await MainActor.run {
+                            self.delegate?.stopShowIndicator()
+                        }
+                    }
+                } catch {
+                    print("error: \(error)")
+                }
+            }
+        }
 //        
 //        if sourceIndexPath.section > 1 && destinationIndexPath.section > 1 {
 //            // audio clip

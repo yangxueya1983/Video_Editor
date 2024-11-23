@@ -94,20 +94,16 @@ class EditProject {
         return true
     }
 
-    func swapAsset(_ asset1: VisualEditAsset, _ asset2: VisualEditAsset) -> Bool {
-        let idx1 = visualAssets.firstIndex { a in
-            return a.id == asset1.id
-        }
-        let idx2 = visualAssets.firstIndex { a in
-            return a.id == asset2.id
-        }
-        
-        guard let idx1, let idx2 else {
+    func swapAsset(_ idx1: Int, _ idx2: Int) async throws -> Bool {
+        guard idx1 < visualAssets.count, idx2 < visualAssets.count else {
             return false
         }
         
         visualAssets.swapAt(idx1, idx2)
-        // don't change the transitions
+        if try await !createCompositionAsset() {
+            return false
+        }
+        
         return true
     }
 
