@@ -389,7 +389,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
                 
                 var width = PhotoMediaUtility.getTimeLength(duration: Float(clip.selectTimeRange.duration.seconds), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
                 
-                if indexPath.row  == 0 || indexPath.row == project.visualAssets.count - 1 {
+                if clipIdx  == 0 || clipIdx == project.visualAssets.count - 1 {
                     // remove one side transition time
                     width -= transWidth
                 } else {
