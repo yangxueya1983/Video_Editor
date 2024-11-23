@@ -72,11 +72,8 @@ class TimeLineLayout : UICollectionViewLayout {
                     currentAttributes[indexPath] = attributes
                     offset += size.width
                 }
-                maxWidth = max(maxWidth, offset)
+                // don't calculate the collectionview content based on the time label views
                 maxHeight = max(maxHeight, 50)
-                
-                // add padding so that the total time
-                maxWidth += collectionView.frame.width / 2 - size.width/2
                 
                 // special handing for item 0
                 let width = delegate.collectionView(collectionView, layout: self, sizeForItemAt: IndexPath(item: 0, section: 0)).width
@@ -212,9 +209,9 @@ class TimeLineLayout : UICollectionViewLayout {
                             attributes.frame = CGRectMake(x, yOffset, size.width, size.height)
                             currentAttributes[indexPath] = attributes
                             x += size.width
-                            maxWidth = max(maxWidth, x)
                             maxHeight = max(maxHeight, yOffset + size.height)
                         }
+                        maxWidth = max(maxWidth, x + collectionView.frame.width/2)
                     }
                 }
             }
