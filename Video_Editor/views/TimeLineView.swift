@@ -61,6 +61,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "timeIndicatorCell")
         collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "timeLineCell")
         collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "videoClipCell")
+        collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "videoTransitionCell")
         collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "audioClipCell")
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -155,9 +156,11 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if section == 0 {
             // the time mark
+            // the extra 1 is the cell shows the current time (total time), the other 1 is because the time
+            // label starts at 0
             if let duration = self.project?.videoDuration {
                 let intervals = Int(ceil(Float(duration.seconds) / curTimeScale))
-                return intervals + 1
+                return intervals + 2
             } else {
                 let intervals = Int(ceil(viewModel.videoDuration / curTimeScale))
                 return intervals + 1
@@ -166,7 +169,8 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
         
         if section == 1 {
             if let project = self.project, project.isReady {
-                return project.visualAssets.count
+                // there are n - 1 transition item
+                return project.visualAssets.count * 2 - 1
             }
 
             return 0
@@ -256,54 +260,60 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             
             
         } else if indexPath.section == 1 {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "videoClipCell", for: indexPath)
-            cell.backgroundColor = .red
-                        
-            if cell.contentView.viewWithTag(100) == nil {
-                // add image container view
-                let containerView = UIView(frame: cell.contentView.bounds)
-                containerView.clipsToBounds = true
-                containerView.tag = 100;
-                cell.contentView.addSubview(containerView)
-                containerView.snp.makeConstraints { make in
-                    make.edges.equalToSuperview()
-                }
-            }
-            
-            let containerView = cell.contentView.viewWithTag(100)!
-            // stack view use tag 101
-            if let subView = containerView.viewWithTag(101) {
-                subView.removeFromSuperview()
-            }
-            
-            cell.layer.borderWidth = 1
-            cell.layer.borderColor = .init(red: 0, green: 1, blue: 0, alpha: 1)
-            if let editAsset = self.project?.visualAssets[indexPath.row] {
-                let size = self.collectionView(collectionView, layout: collectionView.collectionViewLayout, sizeForItemAt: indexPath)
-                let imageCnt = Int(ceil(size.width / size.height))
-                let images = editAsset.getThumnaisls(cnt: imageCnt)
-                
-                var imageViews = [UIImageView]()
-                for image in images {
-                    let imageView = UIImageView(image: image)
-                    imageView.contentMode = .scaleAspectFill
-                    imageViews.append(imageView)
+            if indexPath.row % 2 == 0 {
+                let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "videoClipCell", for: indexPath)
+                cell.backgroundColor = .red
+                if cell.contentView.viewWithTag(100) == nil {
+                    // add image container view
+                    let containerView = UIView(frame: cell.contentView.bounds)
+                    containerView.clipsToBounds = true
+                    containerView.tag = 100;
+                    cell.contentView.addSubview(containerView)
+                    containerView.snp.makeConstraints { make in
+                        make.edges.equalToSuperview()
+                    }
                 }
                 
-                let stackView = UIStackView(arrangedSubviews: imageViews)
-                stackView.tag = 101
-                stackView.alignment = .center
-                stackView.axis = .horizontal
-                stackView.distribution = .fillEqually
-                stackView.spacing = 0
-                containerView.addSubview(stackView)
-                
-                stackView.snp.makeConstraints { make in
-                    make.edges.equalToSuperview()
+                let containerView = cell.contentView.viewWithTag(100)!
+                // stack view use tag 101
+                if let subView = containerView.viewWithTag(101) {
+                    subView.removeFromSuperview()
                 }
+                
+                cell.layer.borderWidth = 1
+                cell.layer.borderColor = .init(red: 0, green: 1, blue: 0, alpha: 1)
+                let clipIdx = indexPath.row / 2
+                if let editAsset = self.project?.visualAssets[clipIdx] {
+                    let size = self.collectionView(collectionView, layout: collectionView.collectionViewLayout, sizeForItemAt: indexPath)
+                    let imageCnt = Int(ceil(size.width / size.height))
+                    let images = editAsset.getThumnaisls(cnt: imageCnt)
+                    
+                    var imageViews = [UIImageView]()
+                    for image in images {
+                        let imageView = UIImageView(image: image)
+                        imageView.contentMode = .scaleAspectFill
+                        imageViews.append(imageView)
+                    }
+                    
+                    let stackView = UIStackView(arrangedSubviews: imageViews)
+                    stackView.tag = 101
+                    stackView.alignment = .center
+                    stackView.axis = .horizontal
+                    stackView.distribution = .fillEqually
+                    stackView.spacing = 0
+                    containerView.addSubview(stackView)
+                    
+                    stackView.snp.makeConstraints { make in
+                        make.edges.equalToSuperview()
+                    }
+                }
+                return cell
+            } else {
+                // transition label
+                let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "videoTransitionCell", for: indexPath)
+                cell.contentView.backgroundColor = .red
+                return cell
             }
-            
-            return cell
         } else {
             // the remaings are the audio clips
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "audioClipCell", for: indexPath)
@@ -312,6 +322,8 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             cell.layer.borderWidth = 1
             return cell
         }
+        
+        assert(false)
     }
     
     func collectionView(_ collectionView: UICollectionView, canMoveItemAt indexPath: IndexPath) -> Bool {
@@ -369,23 +381,27 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
                 return .zero
             }
             
-            // video clip views
-            let clip = project.visualAssets[indexPath.row]
-            
-            var width = PhotoMediaUtility.getTimeLength(duration: Float(clip.selectTimeRange.duration.seconds), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
-            
             let transWidth = PhotoMediaUtility.getTimeLength(duration: Float(EditorSetting.transitionTime), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
-            
-            if indexPath.row  == 0 || indexPath.row == project.visualAssets.count - 1 {
-                // remove one side transition time
-                width -= transWidth
+            if indexPath.row % 2 == 0 {
+                let clipIdx = indexPath.row / 2
+                // video clip views
+                let clip = project.visualAssets[clipIdx]
+                
+                var width = PhotoMediaUtility.getTimeLength(duration: Float(clip.selectTimeRange.duration.seconds), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
+                
+                if indexPath.row  == 0 || indexPath.row == project.visualAssets.count - 1 {
+                    // remove one side transition time
+                    width -= transWidth
+                } else {
+                    // remove both side transition time
+                    width -= transWidth * 2
+                }
+                
+                let s = CGSizeMake(CGFloat(width), 50)
+                return s
             } else {
-                // remove both side transition time
-                width -= transWidth * 2
+                return CGSizeMake(CGFloat(transWidth), 50)
             }
-            
-            let s = CGSizeMake(CGFloat(width), 50)
-            return s
         } else {
             // audo clip views
 //            let audioClip = viewModel.audioClips[indexPath.section - 2][indexPath.row]
