@@ -68,7 +68,7 @@ struct TransitionUtility {
     ///   - videoSie: genreated video size
     ///   - frameDuration: frame rates to generate
     /// - Returns: (composition, video composition, duration)
-    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], transitions: [TransitionType],audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime) async throws -> (AVMutableComposition, AVMutableVideoComposition, CMTime)? {
+    static func configureMixComposition(videoAssets: [AVAsset], videoRanges:[CMTimeRange], transitions: [TransitionType],audioAssets: [AVAsset], audioRanges:[CMTimeRange], audioInsertTimes: [CMTime], transitionDuration: CMTime, videoSie: CGSize, frameDuration: CMTime, customComposeClass: (any AVVideoCompositing.Type)) async throws -> (AVMutableComposition, AVMutableVideoComposition, CMTime)? {
         
         if videoAssets.count != transitions.count + 1 || videoAssets.count != videoRanges.count || audioAssets.count != audioRanges.count {
             print("input error")
@@ -132,7 +132,7 @@ struct TransitionUtility {
         }
         
         let videoComposition = try await AVMutableVideoComposition.videoComposition(withPropertiesOf: composition)
-        videoComposition.customVideoCompositorClass = CustomVideoCompositor.self
+        videoComposition.customVideoCompositorClass = customComposeClass
         
         var instructionCfgs = [(CMTimeRange, [AVAssetTrack], TransitionType)]()
         // add video asset tracks

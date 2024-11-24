@@ -95,4 +95,29 @@ struct PhotoMediaUtility {
     static func getTimeLength(duration: Float, timeScale: Float, timeScaleLen: Float) -> Float {
         return duration / timeScale * timeScaleLen
     }
+    
+    static func inspectVideoPropertiesForURL(videoURL: URL) {
+        let asset = AVURLAsset(url: videoURL)
+        inspectVideoPropertiesForAsset(asset: asset)
+    }
+    
+    static func inspectVideoPropertiesForAsset(asset: AVAsset) {
+        // Get video track
+        guard let videoTrack = asset.tracks(withMediaType: .video).first else {
+            print("No video track found")
+            return
+        }
+        
+        // **1. Video Size (Resolution)**
+        let videoSize = videoTrack.naturalSize.applying(videoTrack.preferredTransform)
+        print("Video Size: \(abs(videoSize.width)) x \(abs(videoSize.height))")
+        
+        // **2. Frame Rate**
+        let frameRate = videoTrack.nominalFrameRate
+        print("Frame Rate: \(frameRate) fps")
+        
+        // **3. Bitrate**
+        let bitrate = videoTrack.estimatedDataRate // Bits per second
+        print("Bitrate: \(bitrate / 1000) kbps") // Convert to kbps
+    }
 }

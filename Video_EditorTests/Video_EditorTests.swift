@@ -106,7 +106,7 @@ struct Video_EditorTests {
         
         let transitionTypes: [TransitionType] = [transitionType]
         
-        guard let (composition, videoComposition, duration) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 60)) else {
+        guard let (composition, videoComposition, duration) = try await TransitionUtility.configureMixComposition(videoAssets: [asset1, asset2], videoRanges: [range1, range2], transitions: transitionTypes, audioAssets: [], audioRanges: [], audioInsertTimes: [], transitionDuration: CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), videoSie: videoSize, frameDuration: CMTime(value: 1, timescale: 60), customComposeClass: ExportCustomVideoCompositor.self) else {
             #expect(Bool(false))
             return
         }
@@ -144,5 +144,50 @@ struct Video_EditorTests {
 //        try await testComposeVideos(transitionType: .MoveDown, outputFileName: "move_down")
 //        try await testComposeVideos(transitionType: .PageCurl, outputFileName: "page_curl")
         try await testComposeVideos(transitionType: .RadiusRotate, outputFileName: "radius_rotate")
+    }
+    
+    @Test("test exportation")
+    func testExportation() async throws {
+        
+        let projectDir = NSTemporaryDirectory() + "export_test"
+        
+        if FileManager.default.fileExists(atPath: projectDir) {
+            _ = try? FileManager.default.removeItem(atPath: projectDir)
+        }
+        
+        // get the configuration
+        let config = ExportConfig()
+        config.resolution = .R4K
+        let project = EditProject(dir: projectDir)
+        
+        let asset1Dir = projectDir + "/asset1"
+        let asset2Dir = projectDir + "/asset2"
+        
+        // load the image
+        let image1 = UIImage(named: "pic_1.jpg")!
+        let image2 = UIImage(named: "pic_2.jpg")!
+        
+        let asset1 = PhotoEditAsset(image: image1, cacheDir: asset1Dir)
+        let asset2 = PhotoEditAsset(image: image2, cacheDir: asset2Dir)
+        #expect(project.addVisualAsset(asset1) == true)
+        #expect(project.addVisualAsset(asset2) == true)
+        
+        #expect(await asset1.process() == true)
+        #expect(await asset2.process() == true)
+        
+        let outputPath = NSTemporaryDirectory() + "export_test.mp4"
+        if FileManager.default.fileExists(atPath: outputPath) {
+            _ = try? FileManager.default.removeItem(atPath: outputPath)
+        }
+        
+        let outputURL = URL(fileURLWithPath: outputPath)
+        print("export to path: \(outputPath)")
+        
+//        var ok = try await project.createCompositionAsset()
+//        #expect(ok)
+        var ok = try await project.export(to: outputURL, config: config)
+        #expect(ok)
+        
+        PhotoMediaUtility.inspectVideoPropertiesForURL(videoURL: outputURL)
     }
 }

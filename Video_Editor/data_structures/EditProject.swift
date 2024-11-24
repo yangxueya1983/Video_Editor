@@ -100,7 +100,8 @@ class EditProject {
             audioInsertTimes: [],
             transitionDuration: transitionDuration,
             videoSie: videoSize,
-            frameDuration: frameRate) else {
+            frameDuration: frameRate,
+            customComposeClass: PlaybackCustomVideoCompositor.self) else {
             return false
         }
         
@@ -165,18 +166,22 @@ class EditProject {
     }
     
     func export(to url: URL, config: ExportConfig = .init(), progress: ((Double) -> Void)? = nil) async throws -> Bool {
-        guard let asset = composition else {
-            print("Error: asset is not ready")
+        guard let (mix, videoComp) = try await getCompositionAndVideoComposition(expConfig: config, progress: progress) else {
+            print("create the composition and video composition failed")
             return false
         }
-        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality) else {
+
+//        PhotoMediaUtility.inspectVideoPropertiesForAsset(asset: mix)
+//        AVAssetExportSession.allExportPresets().forEach { print($0) }
+        
+        guard let exportSession = AVAssetExportSession(asset: mix, presetName: AVAssetExportPresetHighestQuality) else {
             print("Error: export ession create failed")
             return false
         }
         
         exportSession.outputURL = url
         exportSession.outputFileType = .mp4
-        exportSession.videoComposition = videoComposition
+        exportSession.videoComposition = videoComp
         
         await exportSession.export()
         switch exportSession.status {
@@ -223,18 +228,18 @@ class EditProject {
         }
         
         let frameRate = CMTimeMake(value: 1, timescale: Int32(fps))
-        if expConfig.resolution.rawValue <= 1 {
-            // the preview is already use 720p
-            guard let composition = composition, let videoComposition = videoComposition else {
-                return nil
-            }
-
-            videoComposition.frameDuration = frameRate
-            videoComposition.renderSize = renderSize
-            // set to 30% after preparing composition
-            progress?(0.3)
-            return (composition, videoComposition)
-        }
+//        if expConfig.resolution.rawValue <= 1 {
+//            // the preview is already use 720p
+//            guard let composition = composition, let videoComposition = videoComposition else {
+//                return nil
+//            }
+//
+//            videoComposition.frameDuration = frameRate
+//            videoComposition.renderSize = renderSize
+//            // set to 30% after preparing composition
+//            progress?(0.3)
+//            return (composition, videoComposition)
+//        }
         
         // parallel execution
         var assets : [AVAsset?] = Array(repeating: nil, count: visualAssets.count)
@@ -276,7 +281,8 @@ class EditProject {
             audioInsertTimes: [],
             transitionDuration: transitionTime,
             videoSie: renderSize,
-            frameDuration: frameRate) else {
+            frameDuration: frameRate,
+            customComposeClass: ExportCustomVideoCompositor.self) else {
             print("generate mix composition failed")
             return nil
         }
