@@ -409,7 +409,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
                 return .zero
             }
             
-            let transWidth = PhotoMediaUtility.getTimeLength(duration: Float(EditorSetting.transitionTime), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
+            let transWidth = PhotoMediaUtility.getTimeLength(duration: Float(EditorSetting.transitionTime.seconds), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
                 // video clip views
             let clip = project.visualAssets[indexPath.row]
                 
@@ -427,7 +427,7 @@ class TimeLineViewController : UIViewController, UICollectionViewDataSource, UIC
             return s
             
         } else if indexPath.section == 2 {
-            let transWith = PhotoMediaUtility.getTimeLength(duration: Float(EditorSetting.transitionTime), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
+            let transWith = PhotoMediaUtility.getTimeLength(duration: Float(EditorSetting.transitionTime.seconds), timeScale: curTimeScale, timeScaleLen:curTimeScaleLen)
             return CGSizeMake(CGFloat(transWith), 50)
         } else {
             // audo clip views

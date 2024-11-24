@@ -6,11 +6,12 @@
 //
 
 import Foundation
+import AVFoundation
 
 struct MediaSetting {
     static let photoMaxDuration: CGFloat = 5
 }
 
 struct EditorSetting {
-    static let transitionTime: CGFloat = 0.5
+    static let transitionTime: CMTime = CMTime(seconds: 0.5, preferredTimescale: 1000)
 }
