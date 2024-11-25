@@ -31,7 +31,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
 
     var titleLabel : UILabel!
     
-    var archiveProjects: [ArchiveProject] = []
+    var previewProjects: [PreviewProject] = []
     
     // configuration
     let headerMinHeight: CGFloat = 30
@@ -79,6 +79,14 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
 //        prepareTestData()
         // fixed row height
         tableView.rowHeight = 100
+        tableView.reloadData()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        self.previewProjects = ProjectManager.sharedMgr.loadEditProjects()
+        
         tableView.reloadData()
     }
     
@@ -229,32 +237,43 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         let sizeDurationLabel : UILabel = cell.contentView.viewWithTag(102) as! UILabel
         let previewImgView : UIImageView = cell.contentView.viewWithTag(103) as! UIImageView
         
-        let project = archiveProjects[indexPath.row]
+        let project = previewProjects[indexPath.row]
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMdd"
-        createTimeLabel.text = dateFormatter.string(from: project.createDate)
+        createTimeLabel.text = dateFormatter.string(from: project._createDate)
         
         dateFormatter.dateFormat = "dd/MM/yyyy HH:mm"
-        modifyTimeLabel.text = dateFormatter.string(from: project.modifyDate)
+        modifyTimeLabel.text = dateFormatter.string(from: project._modifyDate)
         
-        let duration = Int(project.duration.seconds)
+        let duration = Int(project._videoDuration)
         let second = duration % 60
         let miniute = duration / 60
-        sizeDurationLabel.text = "\(project.sizeInMB)MB    \(String(format: "%02d:%02d", miniute, second))"
-        previewImgView.image = project.representImage
+        var size = project._videoEstimateSize
+        var sizeUnit = "Bytes"
+        if size > 1024 {
+            size /= 1024
+            sizeUnit = "KB"
+        }
+        if size > 1024 {
+            size /= 1024
+            sizeUnit = "MB"
+        }
+        
+        sizeDurationLabel.text = "\(size)\(sizeUnit)    \(String(format: "%02d:%02d", miniute, second))"
+        previewImgView.image = project._thumnail
         
         return cell
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return archiveProjects.count
+        return previewProjects.count
     }
     
     func tableView(_ tableView123: UITableView, heightForFooterInSection section: Int) -> CGFloat {
         var height = tableView.frame.height
         height -= headerMinHeight // header view minimal height
 //        let itemsHeight = CGFloat(tableView.numberOfRows(inSection: section)) * tableView.size
-        height -= (CGFloat(archiveProjects.count) * tableViewRowHeight)
+        height -= (CGFloat(previewProjects.count) * tableViewRowHeight)
         
         return max(height, 0)
     }
@@ -381,22 +400,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
             }
         }
     }
-    
-    // MARK: - prepare test data
-    private func prepareTestData() {
-        var images = [UIImage]()
-        for i in 1...3 {
-            let name = "pic_\(i)"
-            let path = Bundle.main.path(forResource: name, ofType: "jpg")
-            let data = try? Data(contentsOf: URL(fileURLWithPath: path!))
-            images.append(UIImage(data: data!)!)
-        }
-        
-        for image in images {
-            let project = ArchiveProject(createDate: Date(), modifyDate: Date(), duration: CMTime(value: 10, timescale: 1), representImage: image, sizeInMB: 10)
-            archiveProjects.append(project)
-        }
-    }
+
     
     // MARK - PHPhotolibrary view controller delegate
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {

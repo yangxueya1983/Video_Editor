@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 import AVFoundation
 
 class ExportConfig {
@@ -26,7 +27,56 @@ class ExportConfig {
     var bitRate: BitRate = .Recommended
 }
 
+// lightweight class used
+class PreviewProject {
+    let _dir: String
+    let _createDate: Date
+    let _modifyDate: Date
+    var _videoEstimateSize: Int64 = 0
+    var _videoDuration: Double = 0
+    var _thumnail: UIImage?
+    
+    init(dir: String) {
+        _dir = dir
+        
+        // the dir must be exists
+        guard FileManager.default.fileExists(atPath: dir) else {
+            assert(false, "the dir \(dir) does not exist")
+        }
+        
+        let attribute = try! FileManager.default.attributesOfItem(atPath: dir)
+        _createDate = attribute[.creationDate] as! Date
+        _modifyDate = attribute[.modificationDate] as! Date
+        
+        print("project dir: \(dir) created at \(_createDate), modified at \(_modifyDate)")
+        
+        let propertiesFile = dir.appending("/\(EditProject.propertyJsonFileName)")
+        guard FileManager.default.fileExists(atPath: propertiesFile) else {
+            print("no property file found at \(propertiesFile)")
+            return
+        }
+        
+        do {
+            let data = try! Data(contentsOf: URL(fileURLWithPath: propertiesFile))
+            if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                _videoEstimateSize = json[EditProject.propertySizeKey] as? Int64 ?? 0
+                _videoDuration = json[EditProject.propertyDurationKey] as? Double ?? 0.0
+                if let thumnailPath = json[EditProject.propertyThumnailKey] as? String {
+                    _thumnail = UIImage(contentsOfFile: _dir + "/" + thumnailPath)
+                }
+            }
+        } catch {
+            print("error reading property file: \(error.localizedDescription)")
+        }
+    }
+}
+
 class EditProject {
+    static let propertyJsonFileName = "property.json"
+    static let propertySizeKey = "size"
+    static let propertyDurationKey = "duration"
+    static let propertyThumnailKey = "thumbnail"
+    
     private let projectID: UUID
 
     // include video asset photo asset
@@ -117,6 +167,11 @@ class EditProject {
         InstructionStore.shared.instructions = instructions
         
         print("create the composition asset with total duration \(duration.seconds)")
+        
+        if !saveProjectProperties() {
+            return false
+        }
+        
         return true
     }
 
@@ -317,13 +372,54 @@ class EditProject {
 
         return true
     }
+    
+    private func saveProjectProperties() -> Bool {
+        guard let duration = videoDuration else { return false }
+        let propertyPath = dir + "/" + EditProject.propertyJsonFileName
+        
+        var properties: [String: Any] = [:]
+        
+        var estimateSize : Int = 0
+        for v in visualAssets {
+            estimateSize += v.getEstimatedSize()
+        }
+        properties[EditProject.propertySizeKey] = estimateSize
+        // get the duration
+        properties[EditProject.propertyDurationKey] = duration.seconds
+        
+        guard let firstThumnail = visualAssets.first?.getThumnaisls(cnt: 1).first, let firstThumnail else {
+            return false
+        }
+        
+        let projectThumnailPath = dir + "/project_thumnail.png"
+        properties[EditProject.propertyThumnailKey] = "project_thumnail.png"
+        do {
+            if FileManager.default.fileExists(atPath: projectThumnailPath) {
+                try FileManager.default.removeItem(atPath: projectThumnailPath)
+            }
+            
+            if FileManager.default.fileExists(atPath: propertyPath) {
+                try FileManager.default.removeItem(atPath: propertyPath)
+            }
+            
+            try firstThumnail.pngData()?.write(to: URL(fileURLWithPath: projectThumnailPath))
+            try JSONSerialization.data(withJSONObject: properties, options: [.prettyPrinted]).write(to: URL(fileURLWithPath: propertyPath))
+            
+        } catch {
+            print("Error saving project properties: \(error)")
+            return false
+        }
+        
+        return true
+    }
 }
 
 class ProjectManager {
     static let sharedMgr : ProjectManager = ProjectManager()
-    
+    private let _userDirecotry = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+
     func getNextProjectDir() -> String? {
-        let userDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let userDirectory = _userDirecotry
         
         var projIdx = 0
         while true {
@@ -337,8 +433,30 @@ class ProjectManager {
         return nil
     }
     
-    func loadEditProject() -> [EditProject] {
-        let ret: [EditProject] = []
+    func loadEditProjects() -> [PreviewProject] {
+        var ret: [PreviewProject] = []
+
+        // enumerate the dictories
+        if let urls = try? FileManager.default.contentsOfDirectory(at: _userDirecotry, includingPropertiesForKeys: [.isDirectoryKey], options: []) {
+            let filterUrls = urls.filter( {$0.lastPathComponent.hasPrefix("Projects_")})
+            
+            // sorted by the directory create time
+            let sortedUrls = filterUrls.sorted { url1, url2 in
+                let attr1 = try! FileManager.default.attributesOfItem(atPath: url1.path)
+                let attr2 = try! FileManager.default.attributesOfItem(atPath: url2.path)
+                let date1 = attr1[.creationDate] as! Date
+                let date2 = attr2[.creationDate] as! Date
+                // create early item first
+                return date1.timeIntervalSince1970 < date2.timeIntervalSince1970
+            }
+            
+            for url in sortedUrls {
+                let projDir = url.path
+                let previewProject = PreviewProject(dir: projDir)
+                ret.append(previewProject)
+            }
+        }
+
         return ret
     }
 

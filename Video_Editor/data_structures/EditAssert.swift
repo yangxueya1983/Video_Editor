@@ -46,7 +46,12 @@ class EditAsset {
     func preprocess() -> Bool {
         return true
     }
-//    
+    
+    func getEstimatedSize() -> Int {
+        assert(false, "subclass should override this method")
+        return 0
+    }
+//
 //    func getLength(timeScale: Float, timeScaleLen: Float) -> CGFloat {
 //        let seconds = selectTimeRange.duration.seconds
 //        return seconds / CGFloat(timeScale) * CGFloat(timeScaleLen)
@@ -141,6 +146,17 @@ class PhotoEditAsset : VisualEditAsset {
         
         asset = AVURLAsset(url: outputURL)
         return asset
+    }
+    
+    override func getEstimatedSize() -> Int {
+        assert(processed, "call estimated size without processed")
+        
+        let path = getCacheAssetPath()
+        if FileManager.default.fileExists(atPath: path) {
+            return try! FileManager.default.attributesOfItem(atPath: path)[.size] as? Int ?? 0
+        }
+        
+        return 0
     }
     
     private func generateVideo(image: UIImage?) async -> Bool {
