@@ -255,6 +255,10 @@ class EditViewController: UIViewController, TimeLineControllerProtocol {
             
             if !ok {
                 print("create composition asset failed")
+                DispatchQueue.main.async {
+                    self.indicatorView.stopAnimating()
+                }
+                
                 return
             }
 

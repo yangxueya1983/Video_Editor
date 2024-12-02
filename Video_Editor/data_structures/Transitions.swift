@@ -8,7 +8,7 @@
 import Foundation
 import AVFoundation
 
-enum TransitionType : Int {
+enum TransitionType : Int, Codable {
     case None
     case Dissolve
     case CircleEnlarge
@@ -48,10 +48,28 @@ class TransitionFactory {
     }
 }
 
-struct VideoTransition {
+struct VideoTransition : Codable {
     let type: TransitionType
 //    let fromAssetIdx: Int
 //    let toAssetIdx: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case transitionType
+    }
+    
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .transitionType)
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        type = try container.decode(TransitionType.self, forKey: .transitionType)
+    }
+    
+    init(type: TransitionType) {
+        self.type = type
+    }
 }
 
 struct TransitionUtility {

@@ -85,7 +85,7 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        self.previewProjects = ProjectManager.sharedMgr.loadEditProjects()
+        self.previewProjects = ProjectManager.sharedMgr.loadPreviewProjects()
         
         tableView.reloadData()
     }
@@ -295,6 +295,10 @@ class StartViewController: UIViewController, UITableViewDataSource, UITableViewD
         // present the editor view
         let editorVC = EditViewController()
         editorVC.modalPresentationStyle = .fullScreen
+        
+        let previewProject = previewProjects[indexPath.row]
+        editorVC.project = previewProject.getArchivedProject()
+        
         present(editorVC, animated: true)
     }
     

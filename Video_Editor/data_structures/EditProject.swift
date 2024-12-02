@@ -69,13 +69,46 @@ class PreviewProject {
             print("error reading property file: \(error.localizedDescription)")
         }
     }
+    
+    func getArchivedProject() -> EditProject? {
+        let result = EditProject(dir: _dir)
+        return result
+    }
+}
+
+struct PropjectProperty : Codable {
+    let visualAssetPaths: [String]
+    let audioAssetPaths: [String]
+    let transitions: [VideoTransition]
+    
+    enum CodingKeys: String, CodingKey {
+        case visualAssetPaths = "visualAssets"
+        case audioAssetPaths = "audioAssets"
+        case transitions = "transitions"
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(visualAssetPaths, forKey: .visualAssetPaths)
+        try container.encode(audioAssetPaths, forKey: .audioAssetPaths)
+        try container.encode(transitions, forKey: .transitions)
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        visualAssetPaths = try container.decode([String].self, forKey: .visualAssetPaths)
+        audioAssetPaths = try container.decode([String].self, forKey: .audioAssetPaths)
+        transitions = try container.decode([VideoTransition].self, forKey: .transitions)
+    }
 }
 
 class EditProject {
+    // save size, duration, thumbnail
     static let propertyJsonFileName = "property.json"
     static let propertySizeKey = "size"
     static let propertyDurationKey = "duration"
     static let propertyThumnailKey = "thumbnail"
+    static let assetDirPrefix = "asset"
     
     private let projectID: UUID
 
@@ -103,18 +136,38 @@ class EditProject {
         projectID = UUID()
         self.dir = dir
         
-        assert(!FileManager.default.fileExists(atPath: dir), "directory already exists")
-        
-        do {
-            try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-        } catch {
-            print("failed to create directory with error: \(error.localizedDescription)")
+        if (!FileManager.default.fileExists(atPath: dir)) {
+            do {
+                try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            } catch {
+                print("failed to create directory with error: \(error.localizedDescription)")
+            }
+        } else {
+            // it is archived project
+            let enumarator = FileManager.default.enumerator(atPath: dir)
+            if let allAssetDirs = enumarator?.allObjects as? [String] {
+                let assetDirs = allAssetDirs.filter({ $0.contains(EditProject.assetDirPrefix)})
+                print("find assetDirs: \(assetDirs)")
+                
+                for assetDir in assetDirs {
+                    guard let asset = EditAssetArchiveLoader.load(dir: assetDir) else {
+                        continue
+                    }
+                    if asset.editType == .Video || asset.editType == .Image {
+                        visualAssets.append(asset as! VisualEditAsset)
+                    } else {
+                        assert(asset.editType == .Audio)
+                        audioAssets.append(asset as! AudioEditAsset)
+                    }
+                }
+            }
+            
         }
     }
     
     func getNextAssetDirectory() -> String? {
         var asset_idx = 0
-        let prefix = "Asset"
+        let prefix = EditProject.assetDirPrefix
         while true {
             let fullPath = dir + "/" + prefix + "_\(asset_idx)"
             if !FileManager.default.fileExists(atPath: fullPath) {
@@ -433,7 +486,7 @@ class ProjectManager {
         return nil
     }
     
-    func loadEditProjects() -> [PreviewProject] {
+    func loadPreviewProjects() -> [PreviewProject] {
         var ret: [PreviewProject] = []
 
         // enumerate the dictories
@@ -458,6 +511,17 @@ class ProjectManager {
         }
 
         return ret
+    }
+    
+    func loadProjectFromPreview(preview: PreviewProject) -> EditProject? {
+        let projDir = preview._dir
+        let ret = EditProject(dir: projDir)
+        
+        // load the visual assets
+        // TODO: add audio
+        
+        
+        return nil
     }
 
     func ArchiveProject(_ project: EditProject) -> Bool {

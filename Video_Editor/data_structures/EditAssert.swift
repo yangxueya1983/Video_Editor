@@ -11,7 +11,54 @@ import UIKit
 import Photos
 
 struct AssetConfig {
+    static let archivePropertyPath = "archiveProperty.json"
+}
+
+enum EditType : Int {
+    case Unknown, Audio, Video, Image
+}
+
+
+struct AssetProperty : Codable {
+    let type : EditType
+    let selectRangeStart : Double
+    let selectRangeEnd : Double
+    let maxDuration: Double
     
+    // Custom coding keys to rename properties in JSON
+    enum CodingKeys: String, CodingKey {
+        case type
+        case rangeStart
+        case rangeEnd
+        case duration
+    }
+    
+    // Encode the struct to JSON
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type.rawValue, forKey: .type)
+        try container.encode(selectRangeStart, forKey: .rangeStart)
+        try container.encode(selectRangeEnd, forKey: .rangeEnd)
+        try container.encode(maxDuration, forKey: .duration)
+    }
+    
+    init(type: EditType, selectRangeStart: Double, selectRangeEnd: Double, maxDuration: Double) {
+        self.type = type
+        self.selectRangeStart = selectRangeStart
+        self.selectRangeEnd = selectRangeEnd
+        self.maxDuration = maxDuration
+    }
+    
+    // Decode the struct from JSON
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let t = try container.decode(Int.self, forKey: .type)
+        type = EditType(rawValue: t)!
+        
+        selectRangeStart = try container.decode(Double.self, forKey: .rangeStart)
+        selectRangeEnd = try container.decode(Double.self, forKey: .rangeEnd)
+        maxDuration = try container.decode(Double.self, forKey: .duration)
+    }
 }
 
 class EditAsset {
@@ -21,6 +68,11 @@ class EditAsset {
     var selectTimeRange: CMTimeRange = .zero
     var maxDuration: CMTime = .zero
     
+
+    
+    var editType: EditType = .Unknown
+    
+    // for create new asset
     init(cacheDir: String) {
         self.cacheDir = cacheDir
         // create the directory, remove it if not exists
@@ -34,8 +86,17 @@ class EditAsset {
         }
     }
     
+    init(fromArchiveDir: String) {
+        cacheDir = fromArchiveDir
+    }
+    
     func process() async -> Bool {
         return true
+    }
+    
+    func saveProperty() -> Bool {
+        assert(false, "subclass should override this method")
+        return false
     }
     
     func getCacheAssetPath() -> String {
@@ -51,11 +112,6 @@ class EditAsset {
         assert(false, "subclass should override this method")
         return 0
     }
-//
-//    func getLength(timeScale: Float, timeScaleLen: Float) -> CGFloat {
-//        let seconds = selectTimeRange.duration.seconds
-//        return seconds / CGFloat(timeScale) * CGFloat(timeScaleLen)
-//    }
 }
 
 class VisualEditAsset: EditAsset {
@@ -99,8 +155,17 @@ class PhotoEditAsset : VisualEditAsset {
         self.origImage = image
     }
     
+    override init(fromArchiveDir: String) {
+        super.init(fromArchiveDir: fromArchiveDir)
+        
+        // load images
+        thumnail = UIImage(contentsOfFile: thummnailPath)
+        representImage = UIImage(contentsOfFile: representImgPath)
+        origImage = UIImage(contentsOfFile: origImgPath)
+    }
+    
     override func getCacheAssetPath() -> String {
-        return cacheDir + "/video.mov"
+        return "video.mov"
     }
     
     override func process() async -> Bool {
@@ -109,7 +174,15 @@ class PhotoEditAsset : VisualEditAsset {
         }
         
         processed = true
-        return await generateFileDataFromLocal()
+        if await !generateFileDataFromLocal() {
+            return false
+        }
+        
+        if !saveProperty() {
+            return false
+        }
+        
+        return true
     }
     
     override func preprocess() -> Bool {
@@ -151,7 +224,7 @@ class PhotoEditAsset : VisualEditAsset {
     override func getEstimatedSize() -> Int {
         assert(processed, "call estimated size without processed")
         
-        let path = getCacheAssetPath()
+        let path = cacheDir + "/" + getCacheAssetPath()
         if FileManager.default.fileExists(atPath: path) {
             return try! FileManager.default.attributesOfItem(atPath: path)[.size] as? Int ?? 0
         }
@@ -159,12 +232,34 @@ class PhotoEditAsset : VisualEditAsset {
         return 0
     }
     
+    override func saveProperty() -> Bool {
+        // save json file
+        let savePath = cacheDir + "/" + AssetConfig.archivePropertyPath
+        
+        let assetProperty = AssetProperty(type: EditType.Image, selectRangeStart: selectTimeRange.start.seconds, selectRangeEnd: selectTimeRange.end.seconds, maxDuration: maxDuration.seconds)
+        
+        do {
+            if FileManager.default.fileExists(atPath: savePath) {
+                try FileManager.default.removeItem(atPath: savePath)
+            }
+            
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            try encoder.encode(assetProperty).write(to: URL(filePath: savePath))
+        } catch {
+            print("save property failed for error: \(error)")
+            return false
+        }
+        
+        return true
+    }
+    
     private func generateVideo(image: UIImage?) async -> Bool {
         guard let image = image else {
             return false
         }
         
-        let targetUrl = URL(fileURLWithPath: getCacheAssetPath())
+        let targetUrl = URL(fileURLWithPath: cacheDir + "/" + getCacheAssetPath())
         do {
             let error = try await PhotoMediaUtility.createVideoFromImage(image: image, videoSize: CGSize(width: 1024, height: 768), duration: CMTime(seconds: 5, preferredTimescale: 1000), outputURL: targetUrl)
             if let error {
@@ -217,10 +312,46 @@ class PhotoEditAsset : VisualEditAsset {
         
         return await generateVideo(image: self.representImage)
     }
-    
-
 }
 
 class VideoEditAsset: VisualEditAsset {
     // don't need this one if for photo -> video only
+}
+
+struct EditAssetArchiveLoader {
+    static func load(dir: String) -> EditAsset? {
+        let propertyFile = dir + "/" + AssetConfig.archivePropertyPath
+        // sanity check
+        guard let lastComponent = dir.split(separator: "/").last, lastComponent.contains(EditProject.assetDirPrefix) else {
+            return nil
+        }
+        
+        // load the properites
+        var assetProperty: AssetProperty?
+        do {
+            let readData = try Data(contentsOf: URL(fileURLWithPath: propertyFile))
+            
+            let decoder = JSONDecoder()
+            assetProperty = try decoder.decode(AssetProperty.self, from: readData)
+        } catch {
+            print("load the property json failed")
+        }
+        
+        guard let assetProperty, assetProperty.type != .Unknown else {
+            return nil
+        }
+        
+        switch assetProperty.type {
+        case .Image:
+            var imageAsset = PhotoEditAsset(fromArchiveDir: dir)
+            imageAsset.maxDuration = CMTime(seconds: assetProperty.maxDuration, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+            imageAsset.selectTimeRange = CMTimeRange(start: CMTime(seconds: assetProperty.selectRangeStart, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), end: CMTime(seconds: assetProperty.selectRangeEnd, preferredTimescale: CMTimeScale(NSEC_PER_SEC)))
+            
+            return imageAsset
+        default:
+            assert(false, "not supported asset type: \(assetProperty.type)")
+        }
+        
+        return nil
+    }
 }
