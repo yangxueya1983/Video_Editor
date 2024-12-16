@@ -65,6 +65,21 @@ class TransitionGroupCollectionVC : UICollectionViewController {
         delegate?.selectTransitionIndex(groupIdx, indexPath.item)
     }
     
+    func setSelectIndex(_ idx: Int) {
+        for cell in collectionView.visibleCells {
+            cell.contentView.backgroundColor = .systemBlue
+        }
+        
+        if idx == -1 {
+            return
+        }
+        
+        let path = IndexPath(item: idx, section: 0)
+        if let cell = collectionView.cellForItem(at: path) {
+            cell.contentView.backgroundColor = .systemOrange
+        }
+    }
+    
 }
 
 class TransitionTypeMenuVC: UIViewController {
@@ -73,10 +88,18 @@ class TransitionTypeMenuVC: UIViewController {
     
     static var sizingCell = TitleLabelMenuViewCell(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
     
-    let menus = ["Basic"]
+    let menus = ["Basic", "Advanced"]
     // group transition types and group transition type names should match
-    let groupTransitionTypes = [[TransitionType.None, TransitionType.MoveLeft, TransitionType.MoveUp, TransitionType.MoveRight, TransitionType.MoveDown]]
-    let groupTransitionTypeNames = [["None", "Move Left", "Move Up", "Move Right", "Move Down"]]
+    let groupTransitionTypes = [
+        [TransitionType.None, TransitionType.MoveLeft, TransitionType.MoveUp, TransitionType.MoveRight, TransitionType.MoveDown],
+        [TransitionType.CircleEnlarge, TransitionType.Dissolve, TransitionType.PageCurl, TransitionType.RadiusRotate]
+    ]
+    
+    let groupTransitionTypeNames = [
+        ["None", "Move Left", "Move Up", "Move Right", "Move Down"],
+        ["Circle Enlarge", "Dissolve", "Page Curl", "Radius Rotate"]
+    ]
+    
     
     var dataSource = [(menu: String, content: UIViewController)]() {
         didSet {
@@ -142,6 +165,14 @@ class TransitionTypeMenuVC: UIViewController {
 extension TransitionTypeMenuVC : TransitionGrouopCollectionVCDelegate {
     func selectTransitionIndex(_ grpIdx: Int, _ itemIndex: Int) {
         
+        for (idx, config) in dataSource.enumerated() {
+            let vc = config.content as! TransitionGroupCollectionVC
+            if idx == grpIdx {
+                vc.setSelectIndex(itemIndex)
+            } else {
+                vc.setSelectIndex(-1)
+            }
+        }
     }
 }
 
