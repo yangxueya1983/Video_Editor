@@ -1,5 +1,5 @@
 {
-  "originHash" : "8ca0b9c8605c0fcc39f807edd5ca9bbc521d36c4d5c98cacf67265ebd00eb799",
+  "originHash" : "13613bf1de14da77b7463d26365af63c68c8f5a1b6c5aeb44b9f1c55e2332f8f",
   "pins" : [
     {
       "identity" : "nvactivityindicatorview",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "121455c4e630fcb95aaefd7e4257b0c2e3cfe6d5",
         "version" : "5.2.0"
+      }
+    },
+    {
+      "identity" : "pagingkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kazuhiro4949/PagingKit",
+      "state" : {
+        "revision" : "b8adf6c4ffba3df381989c1a74e54c758b2c3135",
+        "version" : "1.18.2"
       }
     },
     {

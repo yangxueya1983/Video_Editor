@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		26642A8C2CD59C8E005AC9E0 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 26642A8B2CD59C8E005AC9E0 /* SnapKit */; };
 		268C57692CF25F320053F60A /* NVActivityIndicatorView in Frameworks */ = {isa = PBXBuildFile; productRef = 268C57682CF25F320053F60A /* NVActivityIndicatorView */; };
+		26CD5BB12D0E97F900996B33 /* PagingKit in Frameworks */ = {isa = PBXBuildFile; productRef = 26CD5BB02D0E97F900996B33 /* PagingKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				26CD5BB12D0E97F900996B33 /* PagingKit in Frameworks */,
 				268C57692CF25F320053F60A /* NVActivityIndicatorView in Frameworks */,
 				26642A8C2CD59C8E005AC9E0 /* SnapKit in Frameworks */,
 			);
@@ -142,6 +144,7 @@
 			packageProductDependencies = (
 				26642A8B2CD59C8E005AC9E0 /* SnapKit */,
 				268C57682CF25F320053F60A /* NVActivityIndicatorView */,
+				26CD5BB02D0E97F900996B33 /* PagingKit */,
 			);
 			productName = Video_Editor;
 			productReference = 26642A532CD594DB005AC9E0 /* Video_Editor.app */;
@@ -228,6 +231,7 @@
 			packageReferences = (
 				26642A872CD5968B005AC9E0 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				268C57672CF25D030053F60A /* XCRemoteSwiftPackageReference "NVActivityIndicatorView" */,
+				26CD5BAF2D0E97F900996B33 /* XCRemoteSwiftPackageReference "PagingKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 26642A542CD594DB005AC9E0 /* Products */;
@@ -612,6 +616,14 @@
 				minimumVersion = 5.2.0;
 			};
 		};
+		26CD5BAF2D0E97F900996B33 /* XCRemoteSwiftPackageReference "PagingKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kazuhiro4949/PagingKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.18.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -624,6 +636,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 268C57672CF25D030053F60A /* XCRemoteSwiftPackageReference "NVActivityIndicatorView" */;
 			productName = NVActivityIndicatorView;
+		};
+		26CD5BB02D0E97F900996B33 /* PagingKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 26CD5BAF2D0E97F900996B33 /* XCRemoteSwiftPackageReference "PagingKit" */;
+			productName = PagingKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
