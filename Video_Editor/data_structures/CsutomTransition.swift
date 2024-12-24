@@ -55,50 +55,75 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
     }
     
     // Main rendering method
-    func startRequest(_ asyncVideoCompositionRequest: AVAsynchronousVideoCompositionRequest) {
+    func startRequest(_ request: AVAsynchronousVideoCompositionRequest) {
         renderingQueue.async {
             guard let renderContext = self.renderContext else {
-                asyncVideoCompositionRequest.finish(with: NSError(domain: "CustomVideoCompositor", code: 0, userInfo: nil))
+                request.finish(with: NSError(domain: "CustomVideoCompositor", code: 0, userInfo: nil))
                 return
             }
             
             let videoSize = renderContext.size
             
-            if asyncVideoCompositionRequest.sourceTrackIDs.count == 1 {
+            if request.sourceTrackIDs.count == 1 {
                 // pass through for only 1 track
-                guard let frame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[0].int32Value) else {
+                guard let frame = request.sourceFrame(byTrackID: request.sourceTrackIDs[0].int32Value) else {
                     print("compositor single track frame is nil")
                     return
                 }
                 
-                asyncVideoCompositionRequest.finish(withComposedVideoFrame: frame)
+                var startTransform: CGAffineTransform = .identity
+                var endTransform: CGAffineTransform = .identity
+                var timeRange: CMTimeRange = .invalid
+                
+                if let instruction = request.videoCompositionInstruction as? AVMutableVideoCompositionInstruction {
+                    instruction.layerInstructions.forEach { layerInstruction in
+                        layerInstruction.getTransformRamp(for: .zero, start: &startTransform, end: &endTransform, timeRange: &timeRange)
+                    }
+                }
+                
+                let ciImage = CIImage(cvPixelBuffer: frame)
+                let transformImage = ciImage.transformed(by: startTransform)
+                let ciContext = CIContext()
+                guard let outputPixelBuffer = renderContext.newPixelBuffer() else {
+                    request.finish(with: NSError(domain: "CustomVideoCompositor", code: -2, userInfo: nil))
+                    return
+                }
+                ciContext.render(transformImage, to: outputPixelBuffer)
+
+                request.finish(withComposedVideoFrame: outputPixelBuffer)
                 return
             }
             
             // Retrieve source frames
-            guard let foregroundFrame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[0].int32Value),
-                  let backgroundFrame = asyncVideoCompositionRequest.sourceFrame(byTrackID: asyncVideoCompositionRequest.sourceTrackIDs[1].int32Value) else {
-                asyncVideoCompositionRequest.finish(with: NSError(domain: "CustomVideoCompositor", code: 1, userInfo: nil))
+            guard let foregroundFrame = request.sourceFrame(byTrackID: request.sourceTrackIDs[0].int32Value),
+                  let backgroundFrame = request.sourceFrame(byTrackID: request.sourceTrackIDs[1].int32Value) else {
+                request.finish(with: NSError(domain: "CustomVideoCompositor", code: 1, userInfo: nil))
                 return
             }
             
             // Apply transition effect (crossfade example)
-            let instrTimeRange = asyncVideoCompositionRequest.videoCompositionInstruction.timeRange
-            assert(CMTimeCompare(instrTimeRange.start, asyncVideoCompositionRequest.compositionTime) <= 0)
-            let transitionFactor =  CGFloat(CMTimeGetSeconds(CMTimeSubtract(asyncVideoCompositionRequest.compositionTime, instrTimeRange.start)))  / CMTimeGetSeconds(asyncVideoCompositionRequest.videoCompositionInstruction.timeRange.duration)
+            let instrTimeRange = request.videoCompositionInstruction.timeRange
+            assert(CMTimeCompare(instrTimeRange.start, request.compositionTime) <= 0)
+            let transitionFactor =  CGFloat(CMTimeGetSeconds(CMTimeSubtract(request.compositionTime, instrTimeRange.start)))  / CMTimeGetSeconds(request.videoCompositionInstruction.timeRange.duration)
             let outputPixelBuffer = renderContext.newPixelBuffer()
             
             // Create CIImages from the pixel buffers
             let ciForeground = CIImage(cvPixelBuffer: foregroundFrame)
             let ciBackground = CIImage(cvPixelBuffer: backgroundFrame)
             
+            let beginEndTransforms = self.getLayerTransforms(request)
+            assert(beginEndTransforms.count == 2)
+            let ciForegroundTransform = ciForeground.transformed(by: beginEndTransforms[0].0)
+            let ciBackgroundTransform = ciBackground.transformed(by: beginEndTransforms[1].0)
+            
+            
 //            guard let origInstruction = self.timeRange2Instruction[instrTimeRange], let instruction = origInstruction as? CustomVideoCompositionInstructionBase else {
 //                asyncVideoCompositionRequest.finish(with: NSError(domain: "instruction is not CustomVideoCompositionInstructionBase", code: 0))
 //                return
 //            }
             
-            guard let instruction = self.getLayerInstruction(request: asyncVideoCompositionRequest) else {
-                asyncVideoCompositionRequest.finish(with: NSError(domain: "instruction is not CustomVideoCompositionInstructionBase", code: 0))
+            guard let instruction = self.getLayerInstruction(request: request) else {
+                request.finish(with: NSError(domain: "instruction is not CustomVideoCompositionInstructionBase", code: 0))
                 return
             }
             
@@ -107,14 +132,15 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
 //                return
 //            }
             
-            let blendedImage = instruction.compose(ciForeground, ciBackground, transitionFactor, videoSize)
+            
+            let blendedImage = instruction.compose(ciForegroundTransform, ciBackgroundTransform, transitionFactor, videoSize)
             
             // Render the blended image into the output buffer
             let ciContext = CIContext()
             ciContext.render(blendedImage!, to: outputPixelBuffer!)
             
             // Finish the request with the output pixel buffer
-            asyncVideoCompositionRequest.finish(withComposedVideoFrame: outputPixelBuffer!)
+            request.finish(withComposedVideoFrame: outputPixelBuffer!)
         }
     }
     
@@ -122,6 +148,23 @@ class CustomVideoCompositor: NSObject, AVVideoCompositing {
         renderingQueue.sync {
             // Cancel any pending requests
         }
+    }
+    
+    func getLayerTransforms(_ request: AVAsynchronousVideoCompositionRequest) -> [(CGAffineTransform, CGAffineTransform)] {
+        var ret = [(CGAffineTransform, CGAffineTransform)]()
+        
+        if let instruction = request.videoCompositionInstruction as? AVMutableVideoCompositionInstruction {
+            instruction.layerInstructions.forEach { layerInstruction in
+                var startTransform: CGAffineTransform = .identity
+                var endTransform: CGAffineTransform = .identity
+                var timeRange: CMTimeRange = .invalid
+                if layerInstruction.getTransformRamp(for: .zero, start: &startTransform, end: &endTransform, timeRange: &timeRange) {
+                    ret.append((startTransform, endTransform))
+                }
+            }
+        }
+        
+        return ret
     }
 }
 

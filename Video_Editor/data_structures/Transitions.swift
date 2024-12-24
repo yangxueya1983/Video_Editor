@@ -152,10 +152,19 @@ struct TransitionUtility {
         let videoComposition = try await AVMutableVideoComposition.videoComposition(withPropertiesOf: composition)
         videoComposition.customVideoCompositorClass = customComposeClass
         
-        var instructionCfgs = [(CMTimeRange, [AVAssetTrack], TransitionType)]()
+        var instructionCfgs = [(CMTimeRange, [AVAssetTrack], [CGAffineTransform], TransitionType)]()
+        
+        var transforms : [CGAffineTransform] = []
+        for (idx, videoTrack) in loadVideoTracks.enumerated() {
+            let natualSize = try await videoTrack!.load(.naturalSize)
+            let transform = getTransform(natualSize: natualSize, renderSize: videoSie)
+            transforms.append(transform)
+        }
+        
         // add video asset tracks
         var curInsertTime = CMTime.zero
         for (idx, videoTrack) in loadVideoTracks.enumerated() {
+            let natualSize = try await videoTrack!.load(.naturalSize)
             let timeRange = videoRanges[idx]
             if idx % 2 == 0 {
                 try videoTrack1.insertTimeRange(timeRange, of: videoTrack!, at: curInsertTime)
@@ -188,11 +197,13 @@ struct TransitionUtility {
                 let transitionTimeRange = CMTimeRange(start: curInsertTime, duration: transitionDuration)
                 // front sample, background sample
                 let instructionTracks = idx % 2 == 0 ? [videoTrack1, videoTrack2] : [videoTrack2, videoTrack1]
-                instructionCfgs.append((transitionTimeRange, instructionTracks, transitionType))
+                // front track (will show), background track(will fade)
+                let ts = [transforms[idx], transforms[idx-1]]
+                instructionCfgs.append((transitionTimeRange, instructionTracks, ts, transitionType))
             }
             
             // add single track instruction
-            instructionCfgs.append((CMTimeRange(start: singleTrackStartTime, duration: singleTrackDuration), [idx % 2 == 0 ? videoTrack1 : videoTrack2], .None))
+            instructionCfgs.append((CMTimeRange(start: singleTrackStartTime, duration: singleTrackDuration), [idx % 2 == 0 ? videoTrack1 : videoTrack2], [transforms[idx]],.None))
             
             curInsertTime = CMTimeAdd(curInsertTime, timeRange.duration)
             if idx < loadVideoTracks.count - 1 {
@@ -219,14 +230,35 @@ struct TransitionUtility {
         return (composition, videoComposition, totalDuration)
     }
     
-    private static func generateInstructions(configures: [(CMTimeRange, [AVAssetTrack], TransitionType)], totalTime: CMTime) -> [AVMutableVideoCompositionInstruction] {
+    private static func getTransform(natualSize: CGSize, renderSize: CGSize) -> CGAffineTransform {
+        let targetAR = renderSize.width / renderSize.height
+        let sourceAR = natualSize.width / natualSize.height
+        
+        var scale: CGFloat = 0
+        
+        if sourceAR > targetAR {
+            scale = renderSize.width / natualSize.width
+        } else {
+            scale = renderSize.height / natualSize.height
+        }
+        
+        let scaleWidth = scale * natualSize.width
+        let scaleHeight = scale * natualSize.height
+        
+        let dx = (renderSize.width - scaleWidth) / 2.0
+        let dy = (renderSize.height - scaleHeight) / 2.0
+        
+        return CGAffineTransform(translationX: dx, y: dy).scaledBy(x: scale, y: scale)
+    }
+    
+    private static func generateInstructions(configures: [(CMTimeRange, [AVAssetTrack], [CGAffineTransform], TransitionType)], totalTime: CMTime) -> [AVMutableVideoCompositionInstruction] {
         var ret:[AVMutableVideoCompositionInstruction] = []
         
         // check time range correct or not
         var check: Bool = true
         var curTime: CMTime = .zero
-        for (timeRange, tracks, trans) in configures {
-            if curTime != timeRange.start {
+        for (timeRange, tracks, ts, trans) in configures {
+            if curTime != timeRange.start || tracks.count != ts.count {
                 check = false
                 break
             }
@@ -240,12 +272,14 @@ struct TransitionUtility {
         }
         
         // add layer instrction
-        for (timeRange, tracks, trans) in configures {
+        for (timeRange, tracks, ts, trans) in configures {
             if tracks.count == 1 {
                 let instruction = AVMutableVideoCompositionInstruction()
                 instruction.timeRange = timeRange
                 // layer instruction
                 let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: tracks[0])
+                layerInstruction.setTransform(ts[0], at: .zero)
+//                layerInstruction.setTransformRamp(fromStart: ts[0], toEnd: ts[0], timeRange: timeRange)
                 instruction.layerInstructions = [layerInstruction]
                 ret.append(instruction)
                 continue
@@ -261,6 +295,8 @@ struct TransitionUtility {
             // hacking the code to force to use custom transition
             layerInstruction1.setOpacityRamp(fromStartOpacity: 0, toEndOpacity: 1, timeRange: timeRange)
             layerInstruction2.setOpacityRamp(fromStartOpacity: 1, toEndOpacity: 0, timeRange: timeRange)
+            layerInstruction1.setTransform(ts[0], at: .zero)
+            layerInstruction2.setTransform(ts[1], at: .zero)
             instruction.layerInstructions = [layerInstruction1, layerInstruction2]
             ret.append(instruction)
         }
