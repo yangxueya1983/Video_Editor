@@ -54,7 +54,9 @@ struct PhotoMediaUtility {
                                 bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
                                 space: rgbColorSpace, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
         
-        context?.draw(image.cgImage!, in: CGRect(x: 0, y: 0, width: videoSize.width, height: videoSize.height))
+        let origPixelSize = CGSizeMake(image.size.width * image.scale, image.size.height * image.scale)
+        let drawRect = getScaleFitDrawRect(origPixelSize, videoSize)
+        context?.draw(image.cgImage!, in: drawRect)
         CVPixelBufferUnlockBaseAddress(buffer, [])
         
         while !writerInput.isReadyForMoreMediaData {}
@@ -119,5 +121,26 @@ struct PhotoMediaUtility {
         // **3. Bitrate**
         let bitrate = videoTrack.estimatedDataRate // Bits per second
         print("Bitrate: \(bitrate / 1000) kbps") // Convert to kbps
+    }
+    
+    private static func getScaleFitDrawRect(_ natualSize: CGSize, _ renderSize: CGSize) -> CGRect {
+        let targetAR = renderSize.width / renderSize.height
+        let sourceAR = natualSize.width / natualSize.height
+        
+        var scale: CGFloat = 0
+        
+        if sourceAR > targetAR {
+            scale = renderSize.width / natualSize.width
+        } else {
+            scale = renderSize.height / natualSize.height
+        }
+        
+        let scaleWidth = scale * natualSize.width
+        let scaleHeight = scale * natualSize.height
+        
+        let dx = (renderSize.width - scaleWidth) / 2.0
+        let dy = (renderSize.height - scaleHeight) / 2.0
+        
+        return CGRect(x : dx, y : dy, width : scaleWidth, height : scaleHeight)
     }
 }
